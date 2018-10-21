@@ -1,4 +1,4 @@
-import React from 'react'
+import React, {Component} from 'react'
 import { View, StyleSheet, Text } from 'react-native'
 
 export default class ScreenWrapperNarrow extends Component {
@@ -18,5 +18,12 @@ export default class ScreenWrapperNarrow extends Component {
 
 let styles = StyleSheet.create({
 	container: {},
-	header: {}
+	header: {
+		position: 'absolute',
+		width: '100%',
+		height: 60
+	},
+	screen: {
+		paddingTop: 60
+	}
 })

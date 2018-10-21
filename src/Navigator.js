@@ -10,23 +10,30 @@ export default class Navigator extends Component {
 
 		this.state = this.getDimensionData();
 		this.startRouter( props.routes );
-		this.listenToResize();
+	}
+
+	static defaultProps = {
+		transitionTime: 1000
 	}
 
 	render(){
 		let Component = this.state.isWide ? NavigatorWide : NavigatorNarrow
-		return <Component router={ this.router } />
+		return <Component router={ this.router }
+			DrawerComponent={ this.props.DrawerComponent }
+			transitionTime={ this.props.transitionTime }
+		/>
 	}
 
 	startRouter( routes ){
 		this.router = createRouter( routes );
-		this.router.onChange( () => this.forceUpdate() );
+		this.fu = () => {};
+		this.router.onChange( () => this.fu() );
 		this.router.start();
 	}
 
 	listenToResize(){
 		this.onResize = () => this.setState( this.getDimensionData() );
-		Dimensions.addEventListener( 'change', this.onResize() );
+		Dimensions.addEventListener( 'change', this.onResize );
 	}
 
 	getDimensionData(){
@@ -37,8 +44,13 @@ export default class Navigator extends Component {
 			isWide : width > 799
 		}
 	}
+	componentDidMount() {
+		this.fu = () => this.forceUpdate();
+		this.listenToResize()
+	}
 
 	componentWillUnmount() {
+		this.fu = () => {}
 		Dimensions.removeEventListener( 'change', this.onResize )
 	}
 }
