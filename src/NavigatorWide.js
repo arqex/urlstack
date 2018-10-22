@@ -1,6 +1,7 @@
 import React, {Component} from 'react'
 import { Animated, View, StyleSheet, Easing } from 'react-native'
 import ScreenWrapperWide from './ScreenWrapperWide'
+import utils from './utils'
 
 export default class NavigatorWide extends Component {
 	constructor( props ){
@@ -8,9 +9,11 @@ export default class NavigatorWide extends Component {
 		
 		let {stack, currentIndex} = props.router
 
-		this.currentIndex = currentIndex
+		this.state = {
+			indexes: utils.calculateIndexes( {}, stack, currentIndex ),
+		}
 
-		this.setTransitions( stack, currentIndex )
+		this.currentIndex = currentIndex
 	}
 
 	render(){
@@ -31,85 +34,48 @@ export default class NavigatorWide extends Component {
 	}
 
 	renderScreens( router ){
+		console.log( router.stack )
+		console.log( this.state.screenMoments )
 		return router.stack.map( ({Screen, location, key}) => (
 			<ScreenWrapperWide screen={ Screen }
 				location={ location }
 				router={ router }
-				transition={ this.transitions[key] }
+				indexes={ this.state.indexes }
 				key={ key }>
-				<Screen router={ router } location={ location } />
+				<Screen router={ router } location={ location } indexes={ this.state.indexes } />
 			</ScreenWrapperWide>
 		))
 	}
 
 	componentWillReceiveProps( nextProps ){
-		let { stack } = nextProps.router;
-		this.setTransitions( stack, this.currentIndex )
+		let indexes = utils.calculateIndexes( this.state.indexes, nextProps.router.stack, this.currentIndex )
+		if( indexes ){
+			this.setState({ indexes })
+		}
 	}
 
 	componentDidUpdate(){
 		let {stack, currentIndex} = this.props.router;
-		if( this.currentIndex !== currentIndex){
-			this.currentIndex = currentIndex
-			this.updateTransitions( stack, currentIndex )
-		}
-	}
-
-	setTransitions( stack, currentIndex ){
-		if( !this.transitions ){
-			this.transitions = {}
-		}
-
-		// Track what transitions are not used anymore
-		let oldTransitions = { ...this.transitions }
-
-		stack.forEach( ({ key }, i) => {
-			if( this.transitions[key] ){
-				return delete oldTransitions[key]
-			}
-
-			let value = 0;
-			if (currentIndex === i) {
-				value = 100;
-			}
-			else if (i < currentIndex) {
-				value = 200;
-			}
-			this.transitions[key] = new Animated.Value(value)
-		})
-
-		// Delete tranistions not used
-		Object.keys(oldTransitions).forEach( key => {
-			delete this.transitions[key]
-		})
-	}
-
-	updateTransitions( stack, currentIndex ){
 		
-		stack.forEach( ({key}, i) => {
-			let t = this.transitions[key]
-			if( currentIndex === i && t._value !== 100 ){
-				Animated.timing( t, { toValue: 100, easing: Easing.linear, duration: 1000 })
-			}
-			else if (currentIndex < i && t._value !== 200) {
-				Animated.timing(t, { toValue: 200, easing: Easing.linear, duration: 1000 })
-			}
-			else if( currentIndex > i && t._value !== 0 ) {
-				Animated.timing(t, { toValue: 0, easing: Easing.linear, duration: 1000 })
-			}
-		})
-
-		console.log( this.transitions )
+		if( this.currentIndex !== currentIndex ){
+			this.currentIndex = currentIndex
+			this.setState({
+				indexes: utils.updateRelativeIndexes( this.state.indexes, stack, currentIndex )
+			})
+		}
 	}
 }
 
 let styles = StyleSheet.create({
 	container: {
+		flex: 1,
 		flexDirection: 'row'
 	},
 	drawer: {},
 	stack: {
-		flexDirection: 'row'
+		flex: 1,
+		flexDirection: 'row',
+		alignItems: 'stretch'
 	},
 	modal: {}
 })
