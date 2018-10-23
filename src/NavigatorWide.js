@@ -48,7 +48,10 @@ export default class NavigatorWide extends Component {
 				indexes={ this.state.indexes[key] }
 				layout={ this.state.layout }
 				key={ key }>
-				<Screen router={ router } location={ location } indexes={ this.state.indexes } />
+				<Screen router={ router }
+					location={ location }
+					indexes={ this.state.indexes[key] }
+					layout={ layout } />
 			</ScreenWrapperWide>
 		))
 	}
