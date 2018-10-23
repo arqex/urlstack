@@ -1,24 +1,70 @@
 import React, {Component} from 'react'
-import { View, StyleSheet, Text } from 'react-native'
+import { View, StyleSheet, Text, Animated } from 'react-native'
 
 export default class ScreenWrapperWide extends Component {
+	constructor(props){
+		super(props)
+
+		this.setAnimatedLayout( props.indexes, props.layout )
+	}
 
 	render(){
-		let classes = [
+		let {indexes, layout} = this.props;
+
+		let containerClasses = [
 			styles.container,
-			this.props.moment === 'present' && styles.wide,
-			this.props.moment === 'future' && styles.closed,
-			this.props.moment === 'past' && styles.fixed
+			{ width: this.width, left: this.left }
 		]
+
+		let screenClasses = [
+			styles.screen,
+			{ opacity: this.opacity }
+		]
+
+		console.log( layout )
+
 		return (
-			<View style={ classes }>
-				<View style={ styles.header }>
-					<Text>This is a header</Text>
-				</View>
-				<View style={ styles.screen }>
+			<Animated.View style={ containerClasses }>
+				<Animated.View style={ screenClasses }>
 					{ this.props.children }
-				</View>
-			</View>
+				</Animated.View>
+			</Animated.View>
+		)
+	}
+	
+	setAnimatedLayout( indexes, layout ){
+		let leftColumn = indexes.screen ? 400 : 0;
+		this.width = indexes.transition.interpolate({
+			inputRange: [ -2, -1, 0, 1, 2, 3 ],
+			outputRange: [ 0, 0, layout.width - leftColumn, 400, 0, 0]
+		})
+		
+		this.left = indexes.transition.interpolate({
+			inputRange: [ -2, -1, 0, 1, 2 ],
+			outputRange: [ layout.width, layout.width, leftColumn, 0, 0]
+		})
+
+		this.opacity = indexes.transition.interpolate({
+			inputRange: [ -2, -.5, 0, 1, 1.5, 2 ],
+			outputRange: [ 0, 0, 1, 1, 0, 0]
+		})
+	}
+
+	componentWillReceiveProps( nextProps ){
+		if( this.hasLayoutChanged( nextProps ) ){
+			this.setAnimatedLayout( nextProps.indexes, nextProps.layout );
+		}
+	}
+
+	hasLayoutChanged( nextProps ){
+		let { width } = nextProps.layout;
+		let { screen, relative } = nextProps.indexes;
+		let { layout, indexes } = this.props;
+
+		return (
+			width !== layout.width ||
+			screen !== indexes.screen ||
+			relative !== indexes.relative
 		)
 	}
 }
@@ -26,20 +72,14 @@ export default class ScreenWrapperWide extends Component {
 let styles = StyleSheet.create({
 	container: {
 		backgroundColor: '#eee',
-		overflow: 'hidden'
+		overflow: 'hidden',
+		position: 'absolute',
+		top: 0, height: '100%'
 	},
-	header: {
-
-	},
-	fixed: {
-		width: 400
-	},
-	closed: {
-		width: 0
-	},
-	wide: {
-		flex: 1,
+	screen: {
 		width: '100%',
-		backgroundColor: 'red'
-	}
+		maxWidth: 800,
+		marginLeft: 'auto',
+		marginRight: 'auto'
+	},
 })

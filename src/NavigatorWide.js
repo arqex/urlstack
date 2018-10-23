@@ -1,5 +1,5 @@
 import React, {Component} from 'react'
-import { Animated, View, StyleSheet, Easing } from 'react-native'
+import { View, StyleSheet } from 'react-native'
 import ScreenWrapperWide from './ScreenWrapperWide'
 import utils from './utils'
 
@@ -11,6 +11,7 @@ export default class NavigatorWide extends Component {
 
 		this.state = {
 			indexes: utils.calculateIndexes( {}, stack, currentIndex ),
+			layout: false
 		}
 
 		this.currentIndex = currentIndex
@@ -24,7 +25,7 @@ export default class NavigatorWide extends Component {
 				<View style={ styles.drawer }>
 					<DrawerComponent router={ router } />
 				</View>
-				<View style={ styles.stack }>
+				<View style={ styles.stack } onLayout={ e => this.updateLayout(e) }>
 					{ this.renderScreens( router ) }
 				</View>
 				<View style={ styles.modal }>
@@ -34,17 +35,27 @@ export default class NavigatorWide extends Component {
 	}
 
 	renderScreens( router ){
-		console.log( router.stack )
-		console.log( this.state.screenMoments )
+		// console.log( router.stack )
+		// console.log( this.state.indexes )
+
+		// Wait for the layout to be drawn
+		if( !this.state.layout ) return;
+
 		return router.stack.map( ({Screen, location, key}) => (
 			<ScreenWrapperWide screen={ Screen }
 				location={ location }
 				router={ router }
-				indexes={ this.state.indexes }
+				indexes={ this.state.indexes[key] }
+				layout={ this.state.layout }
 				key={ key }>
 				<Screen router={ router } location={ location } indexes={ this.state.indexes } />
 			</ScreenWrapperWide>
 		))
+	}
+
+	updateLayout( e ){
+		console.log('Updating layout')
+		this.setState({ layout: e.nativeEvent.layout })
 	}
 
 	componentWillReceiveProps( nextProps ){

@@ -1,3 +1,5 @@
+import {Animated, Easing} from 'react-native'
+
 export default {
 	/**
 	 * Calculate new indexes based on the previous one and the stack.
@@ -20,8 +22,7 @@ export default {
 				screen: i,
 				count: count,
 				relative: activeIndex - i,
-				transition: new Animated.value( activeIndex - i ),
-				active: activeIndex
+				transition: new Animated.Value( activeIndex - i ),
 			}
 		})
 
@@ -49,12 +50,13 @@ export default {
 				count: count,
 				relative: activeIndex - i,
 				transition: indexes[key].transition,
-				active: activeIndex
 			}
 
 			if( index.relative !== indexes[key].relative ){
-				Animated.timing( index.transition, { toValue: index.relative, easing: Easing.linear, duration: 1000 } )
+				Animated.timing( index.transition, { toValue: index.relative, easing: Easing.linear, duration: 300 } ).start()
 			}
+
+			indexes[key] = index;
 		})
 
 		return indexes;

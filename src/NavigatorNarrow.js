@@ -2,16 +2,20 @@ import React, {Component} from 'react'
 import { View, StyleSheet, Animated, Easing } from 'react-native'
 import ScreenWrapperNarrow from './ScreenWrapperNarrow'
 import SideMenu from 'react-native-side-menu'
+import utils from './utils'
 
 export default class NavigatorNarrow extends Component {
 	constructor(props) {
 		super(props);
 
 		let { stack, currentIndex } = props.router
+		
+		this.state = {
+			indexes: utils.calculateIndexes( {}, stack, currentIndex ),
+			layout: false
+		}
 
 		this.currentIndex = currentIndex
-
-		this.setTransitions(stack, currentIndex)
 	}
 
 	render(){
@@ -19,7 +23,7 @@ export default class NavigatorNarrow extends Component {
 
 		let content = (
 			<View style={ styles.container }>
-				<View style={styles.stack}>
+				<View style={styles.stack} onLayout={ e => this.updateLayout(e) }>
 					{ this.renderScreens(router) }
 				</View>
 				<View style={ styles.modal }>
@@ -38,30 +42,30 @@ export default class NavigatorNarrow extends Component {
 		return content;
 	}
 
-	renderScreenWrapper( router ){
-		let { stack, currentIndex } = router;
-		let { Screen, location } = stack[ currentIndex ];
-
-		return (
+	renderScreens( router ){
+		
+		// Wait for the layout to be drawn
+		if( !this.state.layout ) return;
+		
+		return router.stack.map( ({Screen, location, key}, i) => (
 			<ScreenWrapperNarrow Screen={ Screen }
 				location={ location }
 				router={ router }
-				drawer={ this.getDrawer() }>
-				{ this.renderScreens( router ) }
+				indexes={ this.state.indexes[key] }
+				layout={ this.state.layout }
+				key={ key }>
+				<Screen router={ router }
+					location={ location }
+					indexes={ this.state.indexes[key] }
+					layout={ layout }
+					drawer={ this.getDrawer() } />
 			</ScreenWrapperNarrow>
-		)
-	}
-
-	renderScreens( router ){
-		return router.stack.map( ({Screen, location, key}, i) => (
-			<Screen key={ key }
-				router={ router }
-				location={ location }
-				isActive={ router.currentIndex === i }
-				transition={this.transitions[key]}
-				drawer={ this.getDrawer() }
-				key={ key } />
 		))
+	}
+	
+	updateLayout( e ){
+		console.log('Updating layout')
+		this.setState({ layout: e.nativeEvent.layout })
 	}
 
 	getDrawer(){
