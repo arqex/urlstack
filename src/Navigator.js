@@ -1,8 +1,9 @@
 import React, {Component} from 'react'
+import PropTypes from 'prop-types'
 import createRouter from './Router'
 import { Dimensions } from 'react-native'
-import NavigatorNarrow from './NavigatorNarrow'
-import NavigatorWide from './NavigatorWide'
+import NavigatorMobile from './NavigatorMobile'
+import NavigatorDesktop from './NavigatorDesktop'
 
 export default class Navigator extends Component {
 	constructor( props ){
@@ -12,15 +13,20 @@ export default class Navigator extends Component {
 		this.startRouter( props.routes );
 	}
 
+	static propTypes = {
+		transitionMobile: PropTypes.object,
+		transitionDesktop: PropTypes.object,
+	}
+
 	static defaultProps = {
 		transitionTime: 1000
 	}
 
 	render(){
-		let Component = this.state.isWide ? NavigatorWide : NavigatorNarrow
+		let Component = this.state.isWide ? NavigatorDesktop : NavigatorMobile
 		return <Component router={ this.router }
+			transition={ this.state.isWide ? this.props.transitionDesktop : this.props.transitionMobile }
 			DrawerComponent={ this.props.DrawerComponent }
-			transitionTime={ this.props.transitionTime }
 		/>
 	}
 
