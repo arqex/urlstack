@@ -40,13 +40,43 @@ export default class NavigatorNarrow extends NavigatorBase {
 		
 		// Wait for the layout to be drawn
 		if( !layout ) return;
+
+		let screens = []
+		let inTab = false;
 		
-		return router.stack.map( ({Screen, location, key}, i) => (
+		router.stack.forEach( (item, i) => {
+			let {Screen, key} = item
+
+			if( inTab ){
+				inTab = false;
+				return screens.push( this.renderTabs( inTab, item, layout, indexes[inTab.key], router ) );
+			}
+
+			let options = Screen.urlstackOptions || {}
+			if( options.tabs ){
+				// We'll render the screen in the next iteration
+				inTab = item
+				return;
+			}
+
+			screens.push( this.renderScreen( item, layout, indexes[key] ), router )
+		})
+
+		if( inTab ){
+			screens.push( inTab, false, layout, indexes )
+		}
+
+		return screens;
+	}
+
+	renderScreen( {Screen, location, key}, layout, indexes, router ){
+		return (
 			<ScreenWrapperNarrow Screen={ Screen }
 				location={ location }
 				router={ router }
 				indexes={ indexes[key] }
 				layout={ layout }
+				transition={ this.props.transition }
 				key={ key }>
 				<Screen router={ router }
 					location={ location }
@@ -54,7 +84,24 @@ export default class NavigatorNarrow extends NavigatorBase {
 					layout={ layout }
 					drawer={ this.getDrawer() } />
 			</ScreenWrapperNarrow>
-		))
+		)
+	}
+
+	renderTabs( parent, child, layout, indexes, router ){
+		return (
+			<ScreenWrapperNarrow Screen={ parent.Screen }
+				location={ parent.location }
+				router={ router }
+				indexes={ indexes[parent.key] }
+				layout={ layout }
+				key={ parent.key }>
+				<TabDirector parent={ parent }
+					child={ child }
+					layout={ layout }
+					indexes={ indexes }
+					router={ router } />
+			</ScreenWrapperNarrow>
+		)
 	}
 
 	getDrawer(){

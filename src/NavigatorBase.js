@@ -1,5 +1,6 @@
 import {Component} from 'react'
 import {Animated} from 'react-native'
+import memoize from './memoize'
 
 export default class NavigatorBase extends Component {
 	constructor( props ){
@@ -12,7 +13,9 @@ export default class NavigatorBase extends Component {
 			layout: false
 		}
 
-		this.currentIndex = currentIndex
+		// memoize a couple of methods
+		this.calculateIndexes = memoize( this.calculateIndexes.bind( this ) )
+		this.updateRelativeIndexes = memoize( this.updateRelativeIndexes.bind( this ) )
 	}
 
 	updateLayout( e ){
@@ -20,9 +23,9 @@ export default class NavigatorBase extends Component {
 		this.setState({ layout: e.nativeEvent.layout })
 	}
 
-	componentWillReceiveProps( nextProps ){
-		let indexes = this.calculateIndexes( this.state.indexes, nextProps.router.stack, this.currentIndex )
-		if( indexes ){
+	componentWillReceiveProps( nextProps, nextState ){
+		let indexes = this.calculateIndexes( this.state.indexes, nextProps.router.stack, nextProps.router.currentIndex )
+		if( indexes !== this.state.indexes ){
 			this.setState({ indexes })
 		}
 	}
@@ -30,8 +33,8 @@ export default class NavigatorBase extends Component {
 	componentDidUpdate(){
 		let {stack, currentIndex} = this.props.router;
 		
-		if( this.currentIndex !== currentIndex ){
-			this.currentIndex = currentIndex
+		if( this.currentRouterIndex !== currentIndex ){
+			this.currentRouterIndex = currentIndex
 			this.setState({
 				indexes: this.updateRelativeIndexes( this.state.indexes, stack, currentIndex )
 			})
@@ -42,13 +45,26 @@ export default class NavigatorBase extends Component {
 	 * Calculate new indexes based on the previous one and the stack.
 	 * If there are no changes in the indexes, returns false.
 	 */
-	calculateIndexes( oldIndexes, stack, activeIndex ){
+	calculateIndexes( oldIndexes, routerStack, routerActiveIndex ){
+		let { stack, activeIndex } = this.getTabStackInfo( routerStack, routerActiveIndex );
+
 		let count = stack.length
 		let indexes = { ...oldIndexes }
 		let unusedIndexes = { ...oldIndexes }
 		let updated = false;
 
-		stack.forEach( ({key}, i) => {
+		stack.forEach( ({ Screen, key }, i) => {
+			if( skipNext ) {
+				skipNext = false;
+				return;
+			}
+
+			let options = Screen.urlstackOptions || {}
+			if( options.tabs ){
+				// If the the screen is a tab one, the next in the stack is its children
+				skipNext = true;
+			}
+
 			if( unusedIndexes[key] ){
 				return delete unusedIndexes[key]
 			}
@@ -68,6 +84,10 @@ export default class NavigatorBase extends Component {
 			delete indexes[key]
 			updated = true;
 		})
+
+		if( updated ){
+			this.currentIndex = activeIndex
+		}
 
 		return updated && indexes
 	}
@@ -102,5 +122,39 @@ export default class NavigatorBase extends Component {
 		})
 
 		return indexes;
+	}
+
+	/**
+	 * This function translate the plain stack to one that removes inner tab
+	 * screens. Whenever there is a tab screen in the stack, the next screen is its children
+	 * and is not part of the main screen stack.
+	 */
+	getTabStackInfo( stack, activeIndex ) {
+		let indexOffset = 0;
+		let tabStack = [];
+		let skipNext = false;
+
+		stack.forEach( (item, i) => {
+			if( skipNext ){
+				skipNext = false;
+				return;
+			}
+			
+			let options = item.Screen.urlstackOptions || {}
+
+			if( options.tabs ){
+				skipNext = true;
+				if( activeIndex > i ){
+					indexOffset++;
+				}
+			}
+			
+			tabStack.push( item )
+		})
+
+		return {
+			stack: tabStack,
+			activeIndex: activeIndex - indexOffset
+		}
 	}
 }

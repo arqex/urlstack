@@ -29,8 +29,11 @@ export default function create( routes ){
 		// The actual urlhub router
 		router: urlhub.create({strategy}),
 
-		// The stack of screens in place: [{Screen, location, key}]
+		// The stack of screens in place, with nested tabs [{Screen, location, key}]
 		stack: [],
+		
+		// The stack as it returned by urlhub
+		linearStack: [],
 
 		// The current screen in the view port
 		currentIndex: -1,
@@ -118,10 +121,10 @@ function transformLinearStack( linearStack, linearIndex ){
 	let indexOffset = 0
 	linearStack.forEach( (item, i) => {
 		if( inTab ){
+			i < linearIndex && indexOffset++;
 			stack.push( addToTabStack( inTab, item ) )
-			if( i < linearIndex ){
-				indexOffset++
-			}
+			inTab = false
+			return;
 		}
 
 		let { Screen } = item
