@@ -64,7 +64,7 @@ export default function create( routes ){
 function createRouteChanger( router, handler ){
 	let onChange = location => {
 		let { linearStack, linearIndex } = createLinearStack( router, location )
-		let { stack, activeIndex } = transformLinearStack( linearStack )
+		let { stack, activeIndex } = transformLinearStack( linearStack, linearIndex )
 		
 		router.location = location
 		router.linearStack = linearStack
@@ -72,46 +72,120 @@ function createRouteChanger( router, handler ){
 		router.activeIndex = activeIndex
 
 		return handler( location )
-
-		let currentStack = router.stack;
-		let candidateStack = location.matches.map( Screen => ({Screen, location}) );
-		let nextStack = [];
-		let i = 0;
-		let sameRoot = true;
-
-		while( currentStack[i] || candidateStack[i] ){
-			if( sameRoot && currentStack[i] && candidateStack[i] ){
-				if( currentStack[i].Screen === candidateStack[i].Screen ){
-					nextStack.push( { ...candidateStack[i], key: currentStack[i].key } )
-				}
-				else {
-					sameRoot = false;
-					nextStack.push( { ...candidateStack[i], key: generateKey() } )
-				}
-			}
-			else if( sameRoot && currentStack[i] ){
-				nextStack.push( { ...currentStack[i] } );
-			}
-			else if( candidateStack[i] ){
-				nextStack.push( { ...candidateStack[i], key: generateKey() })
-			}
-			// else if( currentStack[i] ) do nothing because is not the same root
-
-			i++;
-		}
-
-		router.linearStack = nextStack;
-
-		let linearIndex = candidateStack.length - 1;
-		let stack = []
-		let
-		router.currentIndex = candidateStack.length - 1;
-		router.location = location;
-
-		return handler( location );
 	}
 
-	return onChange;
+	return onChange
+}
+
+function createLinearStack( router, location ){
+	let currentStack = router.linearStack;
+	let candidateStack = location.matches.map(Screen => ({ Screen, location }));
+	let nextStack = [];
+	let i = 0;
+	let sameRoot = true;
+
+	while (currentStack[i] || candidateStack[i]) {
+		if (sameRoot && currentStack[i] && candidateStack[i]) {
+			if (currentStack[i].Screen === candidateStack[i].Screen) {
+				nextStack.push({ ...candidateStack[i], key: currentStack[i].key })
+			}
+			else {
+				sameRoot = false;
+				// isTabs and isModal is set when transforming the linear stack
+				nextStack.push({ ...candidateStack[i], key: generateKey(), isTabs: false, isModal: false })
+			}
+		}
+		else if (sameRoot && currentStack[i]) {
+			nextStack.push({ ...currentStack[i] });
+		}
+		else if (candidateStack[i]) {
+			nextStack.push({ ...candidateStack[i], key: generateKey(), isTabs: false, isModal: false })
+		}
+		// else if( currentStack[i] ) do nothing because is not the same root
+
+		i++;
+	}
+
+	return {
+		linearStack: nextStack,
+		linearIndex: candidateStack.length - 1
+	}
+}
+
+function transformLinearStack( linearStack, linearIndex ){
+	let inTab = false
+	let stack = []
+	let indexOffSet = 0
+	linearStack.forEach( (item, i) => {
+		if( inTab ){
+			stack.push( addToTabStack( inTab, item ) )
+			if( i < linearIndex ){
+				indexOffSet++
+			}
+		}
+
+		let { Screen } = item
+		let options = Screen.urlstackOptions || {}
+
+		if( options.tabs ){
+			item.isTabs = true
+			if( !item.tabs ){
+				item.tabs = {
+					stack: [],
+					activeIndex: -1
+				}
+			}
+
+			inTab = item
+			return; // We add the item in the next iteration
+		}
+
+		if( options.modal ){
+			item.isModal = true
+		}
+
+		stack.push( item )
+	})
+
+	return {
+		stack: stack,
+		activeIndex: linearIndex - indexOffSet
+	}
+}
+
+function addToTabStack( item, tab ){
+	let {stack, activeIndex} = item.tabs
+
+	let foundIndex = false
+	let i = stack.length;
+	while( i-- > 0 && foundIndex === false ){
+		if( stack[i].Screen === tab.Screen ){
+			foundIndex = i
+		}
+	}
+
+	if( foundIndex !== false && foundIndex === activeIndex ){
+		// No change
+		return item;
+	}
+
+	let nextItem = { ...item };
+	if( foundIndex === false ){
+		let nextStack = stack.slice()
+		nextStack.push( tab );
+		nextItem.tabs = {
+			stack: nextStack,
+			activeIndex: nextStack.length -1
+		}
+	}
+	else {
+		nextItem = {
+			stack: item.stack,
+			activeIndex: foundIndex
+		}
+	}
+
+	return nextItem;
 }
 
 function generateKey() {
