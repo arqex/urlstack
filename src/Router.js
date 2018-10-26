@@ -1,6 +1,29 @@
 import urlhub from 'urlhub'
 import strategy from 'urlhub/hashStrategy'
 
+// A wrapper around urlhub to better manage a stack
+// Changes in the current routes will be stacking the screens,
+// if going back the screens don't get unmounted, there is an index
+// that points to the current active route
+//
+// The route also handles tab screens. Navegating in a tab screen doesn't
+// update the main stack, but the children inside the tab screen
+
+// If we imagine a linear stack of routes like this:
+// /a ---> /a/tab ---> /a/tab/2 ---> /a/tab/2/details ( activeIndex: 2 )
+// [0]     [1]         [2]           [3]
+
+// But the real stack that handles the tab screens would be like this:
+//
+//   [0]     [1]         [2]
+//   /a ---> /a/tab ---> /a/tab/2/details (activeIndex: 1)
+//              |
+//              V
+// [/a/tab/1, /a/tab/2, /a/tab/3 ] (activeTabIndex: 1)
+// [0]        [1]       [2]
+//
+// So there is a new stack for every tab
+
 export default function create( routes ){
 	let stackRouter = {
 		// The actual urlhub router
@@ -40,6 +63,16 @@ export default function create( routes ){
 // Helper to translate urlhub's location changes to the model {stack, index}
 function createRouteChanger( router, handler ){
 	let onChange = location => {
+		let { linearStack, linearIndex } = createLinearStack( router, location )
+		let { stack, activeIndex } = transformLinearStack( linearStack )
+		
+		router.location = location
+		router.linearStack = linearStack
+		router.stack = stack
+		router.activeIndex = activeIndex
+
+		return handler( location )
+
 		let currentStack = router.stack;
 		let candidateStack = location.matches.map( Screen => ({Screen, location}) );
 		let nextStack = [];
@@ -67,7 +100,11 @@ function createRouteChanger( router, handler ){
 			i++;
 		}
 
-		router.stack = nextStack;
+		router.linearStack = nextStack;
+
+		let linearIndex = candidateStack.length - 1;
+		let stack = []
+		let
 		router.currentIndex = candidateStack.length - 1;
 		router.location = location;
 
