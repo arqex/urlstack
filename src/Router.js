@@ -115,12 +115,12 @@ function createLinearStack( router, location ){
 function transformLinearStack( linearStack, linearIndex ){
 	let inTab = false
 	let stack = []
-	let indexOffSet = 0
+	let indexOffset = 0
 	linearStack.forEach( (item, i) => {
 		if( inTab ){
 			stack.push( addToTabStack( inTab, item ) )
 			if( i < linearIndex ){
-				indexOffSet++
+				indexOffset++
 			}
 		}
 
@@ -149,7 +149,7 @@ function transformLinearStack( linearStack, linearIndex ){
 
 	return {
 		stack: stack,
-		activeIndex: linearIndex - indexOffSet
+		activeIndex: linearIndex - indexOffset
 	}
 }
 
