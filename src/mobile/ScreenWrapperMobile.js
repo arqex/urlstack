@@ -1,14 +1,15 @@
 import React from 'react'
 import { StyleSheet, Animated } from 'react-native'
-import ScreenWrapper from './ScreenWrapper'
+import ScreenWrapper from '../ScreenWrapper'
 import TransitionNarrowDefault from './TransitionMobileDefault'
 
-export default class ScreenWrapperNarrow extends ScreenWrapper {
+export default class ScreenWrapperMobile extends ScreenWrapper {
 	static defaultProps = {
 		transition: TransitionNarrowDefault
 	}
 
 	render(){
+		
 		let containerClass = [
 			styles.container,
 			this.animatedStyles

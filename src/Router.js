@@ -29,14 +29,11 @@ export default function create( routes ){
 		// The actual urlhub router
 		router: urlhub.create({strategy}),
 
-		// The stack of screens in place, with nested tabs [{Screen, location, key}]
+		// The stack of screens in place, with nested tabs [{Screen, route, isTabs, isModal, key}]
 		stack: [],
-		
-		// The stack as it returned by urlhub
-		linearStack: [],
 
 		// The current screen in the view port
-		currentIndex: -1,
+		activeIndex: -1,
 
 		// What to do when the URL changes
 		onChange: function( handler ){
@@ -66,13 +63,12 @@ export default function create( routes ){
 // Helper to translate urlhub's location changes to the model {stack, index}
 function createRouteChanger( router, handler ){
 	let onChange = location => {
-		let { linearStack, linearIndex } = createLinearStack( router, location )
-		let { stack, activeIndex } = transformLinearStack( linearStack, linearIndex )
+		let nestedStack = createNestedStack( location );
+		let { stack, index } = mergeStacks( router.stack, nestedStack )
 		
 		router.location = location
-		router.linearStack = linearStack
 		router.stack = stack
-		router.activeIndex = activeIndex
+		router.activeIndex = index
 
 		return handler( location )
 	}
@@ -80,115 +76,98 @@ function createRouteChanger( router, handler ){
 	return onChange
 }
 
-function createLinearStack( router, location ){
-	let currentStack = router.linearStack;
-	let candidateStack = location.matches.map(Screen => ({ Screen, location }));
-	let nextStack = [];
-	let i = 0;
-	let sameRoot = true;
-
-	while (currentStack[i] || candidateStack[i]) {
-		if (sameRoot && currentStack[i] && candidateStack[i]) {
-			if (currentStack[i].Screen === candidateStack[i].Screen) {
-				nextStack.push({ ...candidateStack[i], key: currentStack[i].key })
-			}
-			else {
-				sameRoot = false;
-				// isTabs and isModal is set when transforming the linear stack
-				nextStack.push({ ...candidateStack[i], key: generateKey(), isTabs: false, isModal: false })
-			}
-		}
-		else if (sameRoot && currentStack[i]) {
-			nextStack.push({ ...currentStack[i] });
-		}
-		else if (candidateStack[i]) {
-			nextStack.push({ ...candidateStack[i], key: generateKey(), isTabs: false, isModal: false })
-		}
-		// else if( currentStack[i] ) do nothing because is not the same root
-
-		i++;
-	}
-
-	return {
-		linearStack: nextStack,
-		linearIndex: candidateStack.length - 1
-	}
-}
-
-function transformLinearStack( linearStack, linearIndex ){
+function createNestedStack(location) {
+	let { matches, matchIds} = location
 	let inTab = false
 	let stack = []
-	let indexOffset = 0
-	linearStack.forEach( (item, i) => {
-		if( inTab ){
-			i < linearIndex && indexOffset++;
-			stack.push( addToTabStack( inTab, item ) )
-			inTab = false
+
+	matches.forEach((screen, i) => {
+		if (inTab) {
+			inTab.tabs = {
+				index: 0,
+				stack: [{ Screen: screen, route: matchIds[i], key: generateKey() }]
+			}
+			inTab = false;
 			return;
 		}
 
-		let { Screen } = item
 		let options = Screen.urlstackOptions || {}
-
-		if( options.tabs ){
-			item.isTabs = true
-			if( !item.tabs ){
-				item.tabs = {
-					stack: [],
-					activeIndex: -1
-				}
-			}
-
-			inTab = item
-			return; // We add the item in the next iteration
+		let item = {
+			Screen: screen,
+			route: matchIds[i],
+			isTabs: !!options.tabs,
+			isModal: !!options.modal,
+			location: location,
+			key: generateKey()
 		}
 
-		if( options.modal ){
-			item.isModal = true
+		if (screen.tabs) {
+			item.tabs = [];
 		}
 
-		stack.push( item )
+		stack.push(item)
 	})
 
+	return stack
+}
+
+
+function mergeStacks( currentStack, candidateStack ){
+	let nextStack = []
+	let i = 0
+	let sameRoot = true
+	let current = currentStack[0]
+	let candidate = candidateStack[0]
+
+	while ( current || candidate ) {
+		if (sameRoot && current && candidate) {
+			if (currentStack[i].Screen === candidate.Screen) {
+				nextStack.push( mergeItems( current, candidate ) )
+			}
+			else {
+				sameRoot = false;
+				nextStack.push( candidate )
+			}
+		}
+		else if (sameRoot && currentStack[i]) {
+			nextStack.push( current );
+		}
+		else if (candidate) {
+			nextStack.push( candidate )
+		}
+		// else if( current ) do nothing because is not the same root
+
+		i++;
+		current = currentStack[i]
+		candidate = candidateStack[i]
+	}
+
 	return {
-		stack: stack,
-		activeIndex: linearIndex - indexOffset
+		stack: nextStack,
+		index: candidateStack.length - 1
 	}
 }
 
-function addToTabStack( item, tab ){
-	let {stack, activeIndex} = item.tabs
+function mergeItems( current, candidate ){
+	let item = { ...candidate, key: current.key }
+	if( item.tabs ){
+		item.tabs = mergeTabs( current.tabs, candidate.tabs[0] )
+	}
+	return item;
+}
 
-	let foundIndex = false
-	let i = stack.length;
-	while( i-- > 0 && foundIndex === false ){
-		if( stack[i].Screen === tab.Screen ){
-			foundIndex = i
+function mergeTabs( currentTabs, candidate ){
+	let i = currentTabs.length
+	let stack = currentTabs.slice()
+	while( i-- > 0 ){
+		if( currentTabs[i].route === candidate.route ){
+			// Screen found in the current screen, just update the index
+			return { stack, index: i }
 		}
 	}
 
-	if( foundIndex !== false && foundIndex === activeIndex ){
-		// No change
-		return item;
-	}
-
-	let nextItem = { ...item };
-	if( foundIndex === false ){
-		let nextStack = stack.slice()
-		nextStack.push( tab );
-		nextItem.tabs = {
-			stack: nextStack,
-			activeIndex: nextStack.length -1
-		}
-	}
-	else {
-		nextItem = {
-			stack: item.stack,
-			activeIndex: foundIndex
-		}
-	}
-
-	return nextItem;
+	stack.push( candidate )
+	return { stack, index: stack.length - 1 }
 }
 
 function generateKey() {

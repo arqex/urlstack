@@ -2,8 +2,8 @@ import React, {Component} from 'react'
 import PropTypes from 'prop-types'
 import createRouter from './Router'
 import { Dimensions } from 'react-native'
-import NavigatorMobile from './NavigatorMobile'
-import NavigatorDesktop from './NavigatorDesktop'
+import NavigatorMobile from './mobile/NavigatorMobile'
+import NavigatorDesktop from './desktop/NavigatorDesktop'
 
 export default class Navigator extends Component {
 	constructor( props ){

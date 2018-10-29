@@ -1,6 +1,6 @@
 import React from 'react'
 import { StyleSheet, Animated } from 'react-native'
-import ScreenWrapper from './ScreenWrapper'
+import ScreenWrapper from '../ScreenWrapper'
 
 export default class ScreenWrapperWide extends ScreenWrapper {
 	render(){

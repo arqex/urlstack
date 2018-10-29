@@ -1,7 +1,7 @@
 import React from 'react'
 import { View, StyleSheet } from 'react-native'
 import ScreenWrapperDesktop from './ScreenWrapperDesktop'
-import NavigatorBase from './NavigatorBase'
+import NavigatorBase from '../NavigatorBase'
 import TransitionDesktopDefault from './TransitionDesktopDefault'
 
 export default class NavigatorWide extends NavigatorBase {
