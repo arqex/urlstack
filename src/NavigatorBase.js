@@ -25,6 +25,7 @@ export default class NavigatorBase extends Component {
 
 	componentWillReceiveProps( nextProps ){
 		let { stack, index } = this.getStackAndIndex( nextProps )
+		console.log( stack )
 		let indexes = this.calculateIndexes( this.state.indexes, stack, this.activeIndex )
 		if( indexes && indexes !== this.state.indexes ){
 			this.setState({ indexes })

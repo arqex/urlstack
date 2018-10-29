@@ -14,7 +14,7 @@ export default class TabNavigator extends NavigatorBase {
 		let {Screen, router, location, indexes, layout, drawer} = this.props
 		
 		return (
-			<Screen content={ this.renderScreens( router, layout, drawer ) }
+			<Screen content={ this.renderScreens( router, layout, drawer, indexes ) }
 				router={router}
 				location={location}
 				indexes={indexes}
@@ -24,7 +24,7 @@ export default class TabNavigator extends NavigatorBase {
 		)
 	}
 
-	renderScreens( router, layout, drawer ){
+	renderScreens( router, layout, drawer, indexes ){
 		let tabs = this.props.tabs.stack.map( ({Screen, key, location},i) => {
 			<Screen key={ key }
 				location={ location }

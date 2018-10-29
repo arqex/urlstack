@@ -91,7 +91,7 @@ function createNestedStack(location) {
 			return;
 		}
 
-		let options = Screen.urlstackOptions || {}
+		let options = screen.urlstackOptions || {}
 		let item = {
 			Screen: screen,
 			route: matchIds[i],
@@ -101,8 +101,9 @@ function createNestedStack(location) {
 			key: generateKey()
 		}
 
-		if (screen.tabs) {
-			item.tabs = [];
+		if (item.isTabs) {
+			item.tabs = { index: 0, stack: [] };
+			inTab = item;
 		}
 
 		stack.push(item)
@@ -121,7 +122,7 @@ function mergeStacks( currentStack, candidateStack ){
 
 	while ( current || candidate ) {
 		if (sameRoot && current && candidate) {
-			if (currentStack[i].Screen === candidate.Screen) {
+			if (current.Screen === candidate.Screen) {
 				nextStack.push( mergeItems( current, candidate ) )
 			}
 			else {
@@ -129,7 +130,7 @@ function mergeStacks( currentStack, candidateStack ){
 				nextStack.push( candidate )
 			}
 		}
-		else if (sameRoot && currentStack[i]) {
+		else if (sameRoot && current) {
 			nextStack.push( current );
 		}
 		else if (candidate) {
@@ -151,7 +152,7 @@ function mergeStacks( currentStack, candidateStack ){
 function mergeItems( current, candidate ){
 	let item = { ...candidate, key: current.key }
 	if( item.tabs ){
-		item.tabs = mergeTabs( current.tabs, candidate.tabs[0] )
+		item.tabs = mergeTabs( current.tabs.stack, candidate.tabs.stack[0] )
 	}
 	return item;
 }
