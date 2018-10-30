@@ -11,7 +11,9 @@ export default class ScreenWrapper extends Component {
 		let transition = this.props.transition( indexes, layout )
 		let styles = transition.styles || {}
 
-		let animatedStyles = {}
+		let animatedStyles = {
+			zIndex: indexes.count - Math.abs(indexes.relative)
+		}
 		let transformStyles = []
 
 		Object.keys( styles ).forEach( key => {

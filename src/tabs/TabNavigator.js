@@ -1,5 +1,6 @@
 import React from 'react'
 import { View, StyleSheet, Animated, Easing } from 'react-native'
+import TabScreenWrapper from './TabScreenWrapper'
 import TabTransitionDefault from './TabTransitionDefault'
 import NavigatorBase from '../NavigatorBase'
 
@@ -14,7 +15,7 @@ export default class TabNavigator extends NavigatorBase {
 		let {Screen, router, location, indexes, layout, drawer} = this.props
 		
 		return (
-			<Screen content={ this.renderScreens( router, layout, drawer, indexes ) }
+			<Screen content={ this.renderScreens( router, drawer, indexes ) }
 				router={router}
 				location={location}
 				indexes={indexes}
@@ -24,23 +25,43 @@ export default class TabNavigator extends NavigatorBase {
 		)
 	}
 
-	renderScreens( router, layout, drawer, indexes ){
-		let tabs = this.props.tabs.stack.map( ({Screen, key, location},i) => {
-			<Screen key={ key }
-				location={ location }
-				router={ router }
-				layout={ layout }
-				drawer={ drawer }
-				indexes={ indexes[key] } />
-		})
+	renderScreens( router, drawer ){
+		let {layout, indexes} = this.state
+		let tabs
+
+		if (layout) {
+			tabs = this.props.tabs.stack.map(({ Screen, key, location }, i) => (
+				<TabScreenWrapper Screen={Screen}
+					location={location}
+					router={router}
+					indexes={indexes[key]}
+					layout={layout}
+					transition={this.props.transition}
+					key={key}>
+					<Screen location={location}
+						router={router}
+						layout={layout}
+						drawer={drawer}
+						indexes={indexes[key]} />
+				</TabScreenWrapper>
+			))
+		}
 
 		return (
-			<View>{ tabs }</View>
+			<View style={ styles.container } onLayout={ e => this.updateLayout(e) } ref="view">
+				{ tabs }
+			</View>
 		)
 	}
 
 	getStackAndIndex( props ){
-		let {stack, currentIndex } = props.tabs;
-		return { stack, index: currentIndex }
+		let {stack, index } = props.tabs;
+		return { stack, index: index }
 	}
 } 
+
+let styles = StyleSheet.create({
+	container: {
+		height: '100%'
+	}
+})

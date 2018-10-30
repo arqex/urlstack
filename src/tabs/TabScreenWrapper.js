@@ -3,14 +3,12 @@ import { StyleSheet, Animated } from 'react-native'
 import ScreenWrapper from '../ScreenWrapper'
 
 export default class TabScreenWrapper extends ScreenWrapper {
-	static defaultProps = {
-		transition: TransitionNarrowDefault
-	}
-
 	render() {
+		let {width, height} = this.props.layout;
 		let containerClass = [
 			styles.container,
-			this.animatedStyles
+			this.animatedStyles,
+			{ width, height }
 		]
 
 		return (
