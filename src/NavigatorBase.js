@@ -6,12 +6,14 @@ export default class NavigatorBase extends Component {
 	constructor( props ){
 		super( props );
 		
-		let {stack, index} = this.getStackAndIndex( props )
+		let { stack, index } = this.getStackAndIndex(props)
 
 		this.state = {
 			indexes: this.calculateIndexes({}, stack, index ),
 			layout: false
 		}
+
+		this.previousIndex = index;
 
 		// memoize a couple of methods
 		this.calculateIndexes = memoize( this.calculateIndexes.bind( this ) )
@@ -22,22 +24,37 @@ export default class NavigatorBase extends Component {
 		this.setState({ layout: e.nativeEvent.layout })
 	}
 
+	/*
 	componentWillReceiveProps( nextProps ){
-		let { stack, index } = this.getStackAndIndex( nextProps )
-		let indexes = this.calculateIndexes( this.state.indexes, stack, this.activeIndex )
-		if( indexes && indexes !== this.state.indexes ){
-			this.setState({ indexes })
+		let { stack, index } = this.getStackAndIndex(nextProps)
+		let previous = this.getStackAndIndex( this.props )
+
+		if (previous.index !== index || previous.stack !== stack) {
+			this.setState({
+				indexes: this.calculateIndexes(this.state.indexes, stack, previous.index)
+			})
 		}
 	}
+	*/
 
 	componentDidUpdate() {
 		let { stack, index } = this.getStackAndIndex(this.props)
-		
-		if( this.activeIndex !== index ){
-			this.activeIndex = index
+		let indexes = this.calculateIndexes( this.state.indexes, stack, this.previousIndex )
+		if( indexes !== this.state.indexes ){
+			this.setState( { indexes } );
+		}
+
+		if (this.needRelativeUpdate) {
+			this.needRelativeUpdate = false;
 			this.setState({
-				indexes: this.updateRelativeIndexes( this.state.indexes, stack, index )
+				indexes: this.updateRelativeIndexes(indexes, stack, index)
 			})
+		}
+
+		if( index !== this.previousIndex ){
+			this.needRelativeUpdate = true;
+			this.previousIndex = index;
+			this.forceUpdate();
 		}
 	}
 
@@ -52,7 +69,7 @@ export default class NavigatorBase extends Component {
 
 	/**
 	 * Calculate new indexes based on the previous one and the stack.
-	 * If there are no changes in the indexes, returns false.
+	 * If there are no changes in the indexes, returns oldIndexes.
 	 */
 	calculateIndexes( oldIndexes, stack, activeIndex ){
 		let count = stack.length
@@ -81,11 +98,7 @@ export default class NavigatorBase extends Component {
 			updated = true;
 		})
 
-		if( updated ){
-			this.activeIndex = activeIndex
-		}
-
-		return updated && indexes
+		return updated ? indexes : oldIndexes
 	}
 	
 	/**

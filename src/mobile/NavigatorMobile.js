@@ -41,11 +41,21 @@ export default class NavigatorMobile extends NavigatorBase {
 		
 		// Wait for the layout to be drawn
 		if( !layout ) return;
-		
-		return router.stack.map( (item, i) => {
-			let {key} = item
-			return this.renderScreenAndWrapper( item, layout, indexes[key], router )
+
+		console.log( indexes )
+
+		let screens = [];
+		router.stack.forEach(item => {
+			let { key } = item
+
+			if( !indexes[key] ) {
+				// We are probably rebuilding indexes after navigating
+				return;
+			}
+
+			screens.push( this.renderScreenAndWrapper( item, layout, indexes[key], router ) )
 		})
+		return screens;
 	}
 
 	renderScreenAndWrapper( item, layout, indexes, router ){

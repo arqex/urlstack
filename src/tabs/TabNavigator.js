@@ -2,6 +2,7 @@ import React from 'react'
 import { View, StyleSheet, Animated, Easing } from 'react-native'
 import TabScreenWrapper from './TabScreenWrapper'
 import TabTransitionDefault from './TabTransitionDefault'
+import EmptyTab from './EmptyTab'
 import NavigatorBase from '../NavigatorBase'
 
 
@@ -30,21 +31,24 @@ export default class TabNavigator extends NavigatorBase {
 		let tabs
 
 		if (layout) {
-			tabs = this.props.tabs.stack.map(({ Screen, key, location }, i) => (
-				<TabScreenWrapper Screen={Screen}
-					location={location}
-					router={router}
-					indexes={indexes[key]}
-					layout={layout}
-					transition={this.props.transition}
-					key={key}>
-					<Screen location={location}
+			tabs = this.props.tabs.stack.map(({ Screen, key, location }, i) => {
+				let Content = location ? Screen : EmptyTab;
+				return (
+					<TabScreenWrapper Screen={Screen}
+						location={location}
 						router={router}
+						indexes={indexes[key]}
 						layout={layout}
-						drawer={drawer}
-						indexes={indexes[key]} />
-				</TabScreenWrapper>
-			))
+						transition={this.props.transition}
+						key={key}>
+						<Content location={location}
+							router={router}
+							layout={layout}
+							drawer={drawer}
+							indexes={indexes[key]} />
+					</TabScreenWrapper>
+				)
+			})
 		}
 
 		return (
@@ -55,7 +59,7 @@ export default class TabNavigator extends NavigatorBase {
 	}
 
 	getStackAndIndex( props ){
-		let {stack, index } = props.tabs;
+		let { stack, index } = props.tabs;
 		return { stack, index: index }
 	}
 } 

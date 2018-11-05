@@ -41,6 +41,8 @@ export default class ScreenWrapper extends Component {
 	}
 
 	hasLayoutChanged( nextProps ){
+		if( !nextProps.indexes ) return;
+		
 		let { width } = nextProps.layout;
 		let { screen, relative } = nextProps.indexes;
 		let { layout, indexes } = this.props;

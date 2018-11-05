@@ -37,7 +37,7 @@ export default function create( routes ){
 
 		// What to do when the URL changes
 		onChange: function( handler ){
-			return this.router.onChange( createRouteChanger( this, handler ) )
+			return this.router.onChange( createRouteChanger( this, handler, routes ) )
 		},
 
 		// Start listening to url changes
@@ -47,7 +47,7 @@ export default function create( routes ){
 	};
 
 	stackRouter.router.setRoutes( routes );
-	stackRouter.router.onChange( createRouteChanger( stackRouter, () => {} ) );
+	// stackRouter.router.onChange( createRouteChanger( stackRouter, () => {}, routes ) );
 
 	// Somem extra methods from urlhub
 	['onBeforeChange', 'push', 'replace'].forEach( method => {
@@ -61,10 +61,12 @@ export default function create( routes ){
 
 
 // Helper to translate urlhub's location changes to the model {stack, index}
-function createRouteChanger( router, handler ){
+function createRouteChanger( router, handler, routes ){
+	let routeHierarchy = getHierarchy( routes );
+	
 	let onChange = location => {
-		let nestedStack = createNestedStack( location );
-		let { stack, index } = mergeStacks( router.stack, nestedStack )
+		let nestedStack = createNestedStack( location, routeHierarchy );
+		let { stack, index } = mergeStacks( router.stack, nestedStack, routeHierarchy )
 		
 		router.location = location
 		router.stack = stack
@@ -76,17 +78,16 @@ function createRouteChanger( router, handler ){
 	return onChange
 }
 
-function createNestedStack(location) {
+function createNestedStack( location, routeHierarchy ) {
 	let { matches, matchIds} = location
 	let inTab = false
 	let stack = []
 
 	matches.forEach((screen, i) => {
 		if (inTab) {
-			inTab.tabs = {
-				index: 0,
-				stack: [{ Screen: screen, route: matchIds[i], key: generateKey() }]
-			}
+			let tabStack = inTab.tabs.stack
+			inTab.tabs.index = getTabIndex(matchIds[i], tabStack)
+			tabStack[ inTab.tabs.index ].location = location 
 			inTab = false;
 			return;
 		}
@@ -102,7 +103,7 @@ function createNestedStack(location) {
 		}
 
 		if (item.isTabs) {
-			item.tabs = { index: 0, stack: [] };
+			item.tabs = { index: 0, stack: createTabStack( routeHierarchy[item.route] ) };
 			inTab = item;
 		}
 
@@ -112,8 +113,42 @@ function createNestedStack(location) {
 	return stack
 }
 
+function createTabStack( tabs ){
+	let stack = [];
+	for( let route in tabs ){
+		let options = tabs[route].urlstackOptions || {};
+		let item = {
+			Screen: tabs[route],
+			route: route,
+			location: false, // Location will be set when mounted
+			isTabs: !!options.tabs,
+			isModal: !!options.modal,
+			key: generateKey()
+		}
 
-function mergeStacks( currentStack, candidateStack ){
+		if( item.isTabs ){
+			item.tabs = { index: 0, stack: createTabStack(routeHierarchy[item.route]) };
+		}
+
+		stack.push( item )
+	}
+	
+	return stack;
+}
+
+function getTabIndex( route, tabs ){
+	let i = tabs.length
+	while( i-- > 0 ){
+		if( tabs[i].route === route ){
+			return i;
+		}
+	}
+	console.warn('Tab index not found for route: ' + route )
+	return 0;
+}
+
+
+function mergeStacks( currentStack, candidateStack, routeHierarchy ){
 	let nextStack = []
 	let i = 0
 	let sameRoot = true
@@ -123,7 +158,7 @@ function mergeStacks( currentStack, candidateStack ){
 	while ( current || candidate ) {
 		if (sameRoot && current && candidate) {
 			if (current.Screen === candidate.Screen) {
-				nextStack.push( mergeItems( current, candidate ) )
+				nextStack.push( mergeItems( current, candidate, routeHierarchy ) )
 			}
 			else {
 				sameRoot = false;
@@ -149,26 +184,41 @@ function mergeStacks( currentStack, candidateStack ){
 	}
 }
 
-function mergeItems( current, candidate ){
+function mergeItems( current, candidate, routeHierarchy ){
 	let item = { ...candidate, key: current.key }
 	if( item.tabs ){
-		item.tabs = mergeTabs( current.tabs.stack, candidate.tabs.stack[0] )
+		let nextIndex = candidate.tabs.index;
+		item.tabs = {
+			index: nextIndex,
+			stack: current.tabs.stack.slice()
+		}
+		item.tabs.stack[ nextIndex ].location = candidate.tabs.stack[ nextIndex ].location;
 	}
 	return item;
 }
 
-function mergeTabs( currentTabs, candidate ){
-	let i = currentTabs.length
-	let stack = currentTabs.slice()
-	while( i-- > 0 ){
-		if( currentTabs[i].route === candidate.route ){
-			// Screen found in the current screen, just update the index
-			return { stack, index: i }
-		}
-	}
+function getHierarchy( routes, parentRoute = '' ){
+	let h = {}
 
-	stack.push( candidate )
-	return { stack, index: stack.length - 1 }
+	routes.forEach( r => {
+		let route = parentRoute + r.path;
+
+		if( !r.children ) return (h[route] = false);
+
+		let children = getHierarchy(r.children, r.path)
+		h[route] = cleanChildrenHierarchy( route, r.children );
+		h = { ...h, ...children }
+	})
+
+	return h
+}
+
+function cleanChildrenHierarchy( parentRoute, routes ){
+	let hierarchy = {}
+	routes.forEach( r => {
+		hierarchy[ parentRoute + r.path ] = r.cb
+	})
+	return hierarchy
 }
 
 function generateKey() {

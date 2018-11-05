@@ -10,7 +10,6 @@ export default class Navigator extends Component {
 		super( props )
 
 		this.state = this.getDimensionData();
-		this.startRouter( props.routes );
 	}
 
 	static propTypes = {
@@ -23,6 +22,8 @@ export default class Navigator extends Component {
 	}
 
 	render(){
+		if( !this.router ) return null;
+		
 		let Component = this.state.isWide ? NavigatorDesktop : NavigatorMobile
 		return <Component router={ this.router }
 			transition={ this.state.isWide ? this.props.transitionDesktop : this.props.transitionMobile }
@@ -32,8 +33,8 @@ export default class Navigator extends Component {
 
 	startRouter( routes ){
 		this.router = createRouter( routes );
-		this.fu = () => {};
-		this.router.onChange( () => this.fu() );
+		this.fu = () => this.forceUpdate();
+		this.router.onChange( this.fu );
 		this.router.start();
 	}
 
@@ -51,7 +52,7 @@ export default class Navigator extends Component {
 		}
 	}
 	componentDidMount() {
-		this.fu = () => this.forceUpdate();
+		this.startRouter(this.props.routes);
 		this.listenToResize()
 	}
 
