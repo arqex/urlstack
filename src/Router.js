@@ -103,7 +103,7 @@ function createNestedStack( location, routeHierarchy ) {
 		}
 
 		if (item.isTabs) {
-			item.tabs = { index: 0, stack: createTabStack( routeHierarchy[item.route] ) };
+			item.tabs = { index: 0, stack: createTabStack( routeHierarchy[item.route], routeHierarchy ) };
 			inTab = item;
 		}
 
@@ -113,7 +113,7 @@ function createNestedStack( location, routeHierarchy ) {
 	return stack
 }
 
-function createTabStack( tabs ){
+function createTabStack( tabs, routeHierarchy ){
 	let stack = [];
 	for( let route in tabs ){
 		let options = tabs[route].urlstackOptions || {};
@@ -127,7 +127,7 @@ function createTabStack( tabs ){
 		}
 
 		if( item.isTabs ){
-			item.tabs = { index: 0, stack: createTabStack(routeHierarchy[item.route]) };
+			item.tabs = { index: 0, stack: createTabStack(routeHierarchy[item.route], routeHierarchy) };
 		}
 
 		stack.push( item )
