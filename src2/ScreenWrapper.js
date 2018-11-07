@@ -1,6 +1,7 @@
 import React, {Component} from 'react'
 import { StyleSheet, Animated } from 'react-native'
 import TransitionTabDefault from './defaultTransitions/TransitionTabDefault'
+import animatedStyles from './utils/animatedStyles'
 
 export default class ScreenWrapper extends Component {
 	constructor(props){
@@ -10,20 +11,20 @@ export default class ScreenWrapper extends Component {
 	}
 
 	render(){
-		let containerClass = [
+		let containerStyles = [
 			styles.container,
 			this.animatedStyles
 		]
 
 		return (
-			<Animated.View style={ containerClass }>
+			<Animated.View style={ containerStyles }>
 				{ this.renderScreen() }
 			</Animated.View>
 		)
 	}
 
 	renderScreen(){
-		let { item, ScreenStack, router, transition } = this.props;
+		let { item, ScreenStack, router, transition, indexes, layout } = this.props;
 		let { Screen, location } = item;
 
 		if( item.isTabs ){
@@ -49,30 +50,7 @@ export default class ScreenWrapper extends Component {
 	}
 	
 	setAnimatedLayout( indexes, layout ){
-		let transition = this.props.transition( indexes, layout )
-		let styles = transition.styles || {}
-
-		let animatedStyles = {
-			zIndex: indexes.count - Math.abs(indexes.relative)
-		}
-		let transformStyles = []
-
-		Object.keys( styles ).forEach( key => {
-			if( styleKeys[key] ){
-				animatedStyles[ key ] = indexes.transition.interpolate( styles[key] )
-			}
-			if( transformKeys[key] ){
-				transformStyles.push({
-					[key]: indexes.transition.interpolate( styles[key] )
-				})
-			}
-		})
-
-		if( transformStyles.length ){
-			animatedStyles.transform = transformStyles
-		}
-
-		this.animatedStyles = animatedStyles;
+		this.animatedStyles = animatedStyles( this.props.transition, indexes, layout )
 	}
 
 	componentWillReceiveProps( nextProps ){
@@ -106,15 +84,3 @@ let styles = StyleSheet.create({
 		zIndex:10
 	}
 })
-
-
-let transformKeys = {};
-[	'perspective', 'rotate', 'rotateX', 'rotateY', 'rotateZ', 
-	'scale', 'scaleX', 'scaleY', 'translateX', 'translateY',
-	'skewX', 'skewY'
-].forEach( key => transformKeys[key] = 1 )
-
-let styleKeys = {};
-[ 'left', 'right', 'top', 'bottom',
-	'width', 'height', 'opacity', 'backgroundColor'
-].forEach( key => styleKeys[key] = 1 )

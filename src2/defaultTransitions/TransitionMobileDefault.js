@@ -17,6 +17,7 @@ export default function TransitionNarrowDefault( indexes, layout ){
 			},
 		},
 		easing: Easing.linear,
-		duration: 300
+		duration: 300,
+		collapsibleDrawer: true
 	}
 }

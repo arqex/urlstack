@@ -1,18 +1,47 @@
 import React, {Component} from 'react'
-import { StyleSheet, Animated, View } from 'react-native'
+import { StyleSheet, Animated, View, Text } from 'react-native'
+import animatedStyles from './utils/animatedStyles'
+
 
 export default class ModalWrapper extends Component {
 	constructor(props){
 		super(props)
+		this.setAnimatedLayout( props.indexes, props.layout )
 	}
 
 	render(){
-		let { Drawer, router } = this.props
+		let containerStyles = [
+			styles.container,
+			this.animatedStyles
+		]
 
 		return (
-			<View>
-				<Drawer router={ router } />
-			</View>
+			<Animated.View style={ containerStyles }>
+				<Text>This is the modal wrapper</Text>
+			</Animated.View>
+		)
+	}
+	
+	setAnimatedLayout( indexes, layout ){
+		this.animatedStyles = animatedStyles( this.props.transition, indexes, layout )
+	}
+
+	componentWillReceiveProps( nextProps ){
+		if( this.hasLayoutChanged( nextProps ) ){
+			this.setAnimatedLayout( nextProps.indexes, nextProps.layout );
+		}
+	}
+
+	hasLayoutChanged( nextProps ){
+		if( !nextProps.indexes ) return;
+		
+		let { width } = nextProps.layout;
+		let { showing } = nextProps.indexes;
+		let { layout, indexes } = this.props;
+
+		return (
+			width !== layout.width ||
+			showing !== indexes.showing
 		)
 	}
 }

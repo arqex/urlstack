@@ -1,24 +1,32 @@
 import {Easing} from 'react-native'
 
-export default function TransitionModalDefault( indexes, layout ){
-	return {
-		screenStyles: {
-			translateY: {
-				inputRange: [ 0, 1 ],
-				outputRange: [ -100, 0 ]
+export default {
+	stack: function( indexes, layout ){
+		return {
+			styles: {
+				translateY: {
+					inputRange: [ 0, 1 ],
+					outputRange: [ -100, 0 ]
+				},
+				opacity: {
+					inputRange: [ 0, 1 ],
+					outputRange: [ 0, 1 ]
+				}
 			},
-			opacity: {
-				inputRange: [ 0, 1 ],
-				outputRange: [ 0, 1 ]
-			}
-		},
-		modalStyles: {
-			translateY: {
-				inputRange: [ 0, 1 ],
-				outputRange: [ '100%', '0%' ]
-			}
-		},
-		easing: Easing.linear,
-		duration: 300
+			easing: Easing.linear,
+			duration: 300
+		}
+	},
+	modal: function( indexes, layout ) {
+		return {
+			styles: {
+				translateY: {
+					inputRange: [ 0, 1 ],
+					outputRange: [ '100%', '0%' ]
+				}
+			},
+			easing: Easing.linear,
+			duration: 300
+		}
 	}
 }

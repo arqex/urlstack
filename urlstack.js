@@ -1,2 +1,2 @@
-import Navigator from './src/Navigator';
+import Navigator from './src2/Navigator';
 export {Navigator};

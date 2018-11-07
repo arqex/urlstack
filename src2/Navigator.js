@@ -1,7 +1,7 @@
 import React, {Component} from 'react'
 import PropTypes from 'prop-types'
-import createRouter from '../Router'
-import { Dimensions } from 'react-native'
+import createRouter from '../src/Router'
+import { Dimensions, View, StyleSheet, Animated } from 'react-native'
 import ScreenStack from './ScreenStack'
 import ModalWrapper from './ModalWrapper'
 import DrawerWrapper from './DrawerWrapper'
@@ -35,16 +35,27 @@ export default class Navigator extends Component {
 		if( !router ) return null;
 		
 		let { DrawerComponent, transitions } = this.props
-		let { width, height } = this.state
+		let { width, height, indexes } = this.state
 		
 		let transition = this.getCurrentTransition( transitions, width, height )
+		let modalTransition = this.getModalTransitions( transition )
 		let { stack, index } = this.getScreenStack( router.stack, router.activeIndex )
 
 		return (
-			<View>
-				<DrawerWrapper router={ router } collapsible={ transition.collapsibleDrawer } DrawerComponent={ DrawerComponent } />
-				<ScreenStack router={ router } transition={ transition } stack={ stack } index={ index } />
-				<ModalWrapper router={ router } transition={ transition.modalTransition || TransitionModalDefault } />
+			<View style={ styles.container }>
+				<DrawerWrapper router={ router }
+					collapsible={ transition.collapsibleDrawer }
+					Drawer={ DrawerComponent } />
+				<ScreenStack router={ router }
+					screenTransition={ transition }
+					stackTransition={ modalTransition.stack }
+					stackIndexes={ indexes.stack }
+					stack={ stack }
+					index={ index } />
+				<ModalWrapper router={ router }
+					transition={ modalTransition.modal }
+					indexes={ indexes.modal }
+					layout={ {width, height} } />
 			</View>
 		)
 	}
@@ -62,6 +73,17 @@ export default class Navigator extends Component {
 		return transitions[ breakPoints[0] ]
 	}
 
+	getModalTransitions( transition ){
+		let t = transition
+		if( !t ){
+			let { transitions } = this.props
+			let { width, height } = this.state
+			t = this.getCurrentTransition( transitions, width, height )
+		}
+		return t.modalTransition || TransitionModalDefault
+	}
+
+	// Takes the modal screens out of the stack
 	getScreenStack( routerStack, routerIndex ){
 		let stack = routerStack.slice();
 		let index = routerIndex;
@@ -71,7 +93,7 @@ export default class Navigator extends Component {
 
 		if( options.modal ){
 			stack.pop()
-			if( index === last ){
+			if( index === lastIndex ){
 				index--;
 			}
 		}
@@ -84,6 +106,8 @@ export default class Navigator extends Component {
 		this.fu = () => this.forceUpdate();
 		this.router.onChange( () => this.fu() );
 		this.router.start();
+		this.showingModal = this.detectModal();
+		this.updateModalIndexes( this.showingModal )
 	}
 
 	listenToResize(){
@@ -105,4 +129,62 @@ export default class Navigator extends Component {
 		this.fu = () => {}
 		Dimensions.removeEventListener( 'change', this.onResize )
 	}
+
+	componentDidUpdate(){
+		let showModal = this.detectModal()
+		if( this.showingModal !== showModal ){
+			this.showingModal = showModal;
+			this.updateModalIndexes( showModal );
+		}
+	}
+
+	detectModal(){
+		let item = this.router.stack[ this.router.activeIndex ]
+		return item && item.isModal
+	}
+
+	updateModalIndexes( showModal ){
+		let {indexes} = this.state
+
+		if( !indexes ){
+			indexes = {
+				modal: {showing: !!showModal, transition: new Animated.Value( showModal ? 1 : 0) },
+				stack: {showing: !showModal, transition: new Animated.Value( showModal ? 0 : 1) }
+			}
+		}
+		else {
+			let {width, height} = this.state
+			let transitions = this.getModalTransitions()
+			let modalTransition = transitions.modal( indexes.modal, {width, height} )
+			let stackTransition = transitions.stack( indexes.stack, {width, height} )
+
+			indexes = {
+				modal: {showing: !!showModal, transition: indexes.modal.transition },
+				stack: {showing: !showModal, transition: indexes.stack.transition }
+			}
+
+			Animated.timing( indexes.modal.transition, {
+				toValue: showModal ? 1 : 0,
+				easing: modalTransition.easing,
+				duration: modalTransition.duration || 300,
+				useNativeDriver: true
+			}).start()
+
+			Animated.timing( indexes.stack.transition, {
+				toValue: showModal ? 0 : 1,
+				easing: stackTransition.easing,
+				duration: stackTransition.duration || 300,
+				useNativeDriver: true
+			}).start()
+		}
+
+		this.setState({indexes})
+	}
 }
+
+let styles = StyleSheet.create({
+	container: {
+		flex: 1,
+		flexDirection: 'row'
+	}
+})

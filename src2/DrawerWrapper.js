@@ -7,11 +7,25 @@ export default class DrawerWrapper extends Component {
 	}
 
 	render(){
-		let { Drawer, router } = this.props
+		let { Drawer, router, collapsible } = this.props
+		let containerStyles = [
+			styles.container,
+			collapsible && styles.collapsibleDrawer
+		]
+		let drawerStyles = [
+			styles.drawer
+		]		
+		let overlayStyles = [
+			styles.overlay,
+			collapsible && styles.collapsibleOverlay
+		]
 
 		return (
-			<View>
-				<Drawer router={ router } />
+			<View styles={ containerStyles }>
+				<View styles={ drawerStyles }>
+					<Drawer router={ router } />
+				</View>
+				<View style={ overlayStyles }></View>
 			</View>
 		)
 	}
@@ -20,10 +34,19 @@ export default class DrawerWrapper extends Component {
 let styles = StyleSheet.create({
 	container: {
 		backgroundColor: '#eee',
-		overflow: 'hidden',
+		zIndex: 10
+	},
+	collapsibleDrawer: {
+		display: 'none',
 		position: 'absolute',
-		width: '100%', height: '100%',
-		top: 0, left: 0,
-		zIndex:10
+	},
+	drawer: {
+
+	},
+	overlay: {
+		backgroundColor: 'red'
+	},
+	collapsibleOverlay: {
+		display: 'none'
 	}
 })

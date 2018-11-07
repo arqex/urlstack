@@ -1,6 +1,7 @@
-import {Component} from 'react'
+import React, {Component} from 'react'
 import {Animated, View, StyleSheet} from 'react-native'
 import memoize from './utils/memoize'
+import ScreenWrapper from './ScreenWrapper'
 
 export default class ScreenStack extends Component {
 	constructor( props ){
@@ -21,7 +22,7 @@ export default class ScreenStack extends Component {
 	}
 
 	render(){
-		let { stack } = this.props
+		let { stack, router } = this.props
 
 		return (
 			<View style={ styles.container }>
@@ -40,8 +41,6 @@ export default class ScreenStack extends Component {
 		// Wait for the layout to be drawn
 		if( !layout ) return;
 
-		console.log( indexes )
-
 		let screens = [];
 		stack.forEach(item => {
 			let { Screen, key, location } = item
@@ -53,10 +52,11 @@ export default class ScreenStack extends Component {
 
 			screens.push(
 				<ScreenWrapper item={ item }
+					ScreenStack={ ScreenStack }
 					router={ router }
-					indexes={ indexes }
+					indexes={ indexes[item.key] }
 					layout={ layout }
-					transition={ this.props.transition }
+					transition={ this.props.screenTransition }
 					key={ key } />
 			)
 		})
@@ -125,6 +125,8 @@ export default class ScreenStack extends Component {
 			updated = true;
 		})
 
+		console.log( updated )
+
 		return updated ? indexes : oldIndexes
 	}
 	
@@ -135,7 +137,7 @@ export default class ScreenStack extends Component {
 	updateRelativeIndexes( oldIndexes, stack, activeIndex ){
 		let indexes =  { ...oldIndexes }
 		let count = stack.length
-		let {transition} = this.props
+		let transition = this.props.screenTransition
 
 		stack.forEach( ({key}, i) => {
 			let index = {
