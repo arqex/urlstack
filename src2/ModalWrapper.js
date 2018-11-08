@@ -15,11 +15,21 @@ export default class ModalWrapper extends Component {
 			this.animatedStyles
 		]
 
+		let item = this.getScreenItem( this.props.item )
+		let content = item ? <item.Screen /> : <View></View>;
+
 		return (
 			<Animated.View style={ containerStyles }>
-				<Text>This is the modal wrapper</Text>
+				{ content }
 			</Animated.View>
 		)
+	}
+
+	getScreenItem( item ){
+		if( item && item !== this.item ){
+			this.item = item;
+		}
+		return this.item;
 	}
 	
 	setAnimatedLayout( indexes, layout ){

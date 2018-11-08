@@ -53,6 +53,7 @@ export default class Navigator extends Component {
 					stack={ stack }
 					index={ index } />
 				<ModalWrapper router={ router }
+					item={ this.getModalItem( router.stack ) }
 					transition={ modalTransition.modal }
 					indexes={ indexes.modal }
 					layout={ {width, height} } />
@@ -99,6 +100,14 @@ export default class Navigator extends Component {
 		}
 
 		return {stack, index}
+	}
+
+	getModalItem( routerStack ){
+		let i = routerStack.length
+		while( i-- > 0 ){
+			if( routerStack[i].isModal )
+				return routerStack[i]
+		}
 	}
 
 	startRouter( routes ){
