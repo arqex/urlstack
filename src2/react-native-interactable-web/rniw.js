@@ -6,27 +6,35 @@ export default class InteractableView extends Component {
 	constructor( props ){
 		super( props )
 
-		this.state = {
-			pan: new Animated.ValueXY()
-		}
+		this.pan = new Animated.ValueXY();
 
 		this._pr = this.createPanResponder( props )
 	}
 
-	propTypes = {
+	static propTypes = {
 		snapPoints: PropTypes.array,
 		frictionAreas: PropTypes.array,
 		horizontalOnly: PropTypes.bool,
-		verticalOnly: PropTypes.bool
+		verticalOnly: PropTypes.bool,
+		animatedValueX: PropTypes.instanceOf( Animated.Value ),
+		animatedValueY: PropTypes.instanceOf( Animated.Value ),
+		onSnap: PropTypes.func,
+		onSnapStart: PropTypes.func,
+		onEnd: PropTypes.func,
+		onDrag: PropTypes.func,
 	}
 
-	defaultProps = {
+	static defaultProps = {
 		snapPoints: [],
-		frictionAreas: []
+		frictionAreas: [],
+		onSnap: function(){},
+		onSnapStart: function(){},
+		onEnd: function(){},
+		onDrag: function(){},
 	}
 
 	render(){
-		let {x,y} = this.state.pan
+		let {x,y} = this.getPan()
 		let position = { transform: [
 			{translateX: x}, {translateY: y}
 		]}
@@ -39,7 +47,7 @@ export default class InteractableView extends Component {
 	}
 
 	createPanResponder( props ){
-		let {x,y} = this.state.pan
+		let {x,y} = this.getPan()
 
 		let eventPan = {dx: x, dy: y};
 		if(props.horizontalOnly){
@@ -49,43 +57,63 @@ export default class InteractableView extends Component {
 			delete eventPan.dx
 		}
 
-		let getFrictionFactor = this.calculateFrictionFn( props.frictionAreas );
+		let applyFriction 
+		let pan
 		
 		return PanResponder.create({
 			onMoveShouldSetResponderCapture: () => true,
 			onMoveShouldSetPanResponderCapture: () => true,
 	
 			onPanResponderGrant: (e, gestureState) => {
-				let pan = this.state.pan
-				this.state.pan.setOffset({x: pan.x._value, y: pan.y._value});
-				this.state.pan.setValue({x: 0, y: 0});
+				pan = this.getPan()
+
+				let offset = {x: pan.x._value, y: pan.y._value}
+				applyFriction = combineAreaFactors( props.frictionAreas, offset );
+
+				pan.setOffset( offset );
+				pan.setValue({x: 0, y: 0});
+				
+				this.props.onDrag({ state: 'start', x: pan.x._value, y: pan.y._value })
 			},
 	
-			onPanResponderMove: Animated.event([ null, eventPan ]),
+			onPanResponderMove: function( evt, {dx, dy}){
+				pan.setValue( applyFriction({x: dx, y: dy}) )
+			},
 	
 			onPanResponderRelease: (e, {vx, vy}) => {
-				// Flatten the offset to avoid erratic behavior
-				this.state.pan.flattenOffset();
 
-				let pan = this.state.pan
+				let pan = this.getPan()
+
+				// Flatten the offset to avoid erratic behavior
+				pan.flattenOffset();
+
+				let endDragEvent = { state: 'end', x: pan.x._value, y: pan.y._value }
 
 				if( this.props.snapPoints ){
 					let {horizontalOnly, verticalOnly} = this.props
 					let calculateX = verticalOnly ? 0 : 1
 					let calculateY = horizontalOnly ? 0 : 1
-					let snapPoint = this.getClosestPoint( pan.x._value, pan.y._value, calculateX, calculateY )
+					let closest = this.getClosestPoint( pan.x._value, pan.y._value, calculateX, calculateY )
+					let snapPoint = closest.point
+					
+					endDragEvent.targetSnapPointId = snapPoint.id
+					this.props.onSnapStart( {index: closest.index, id: snapPoint.id} )
 
 					Animated.spring( pan, {
 						toValue: snapPoint,
 						velocity: {x: vx, y: vy},
-						stiffness: 100,
-						damping: 10,
-						mass: 1
-					}).start()
-
-					console.log( {x: pan.x._value, y: pan.y._value}, snapPoint, {vx, vy} )
+						tension: 40,
+						friction: 7
+					}).start( () => {
+						this.props.onSnap( {index: closest.index, id: snapPoint.id} );
+						this.props.onStop( {x: pan.x._value, y: pan.y._value} )
+					})
 				}
+				else {
 
+				}
+				
+				this.props.onDrag( endDragEvent )
 			}
 		})
 	}
@@ -93,33 +121,140 @@ export default class InteractableView extends Component {
 	getClosestPoint( x, y, calculateX, calculateY ){
 		let snaps = this.props.snapPoints
 		let i = snaps.length - 1 
-		let closest = snaps[i]
-		let distance = this.calculatePointDistance( x, y, closest, calculateX, calculateY )
+		let point = snaps[i]
+		let index = i
+		let distance = this.calculatePointDistance( x, y, point, calculateX, calculateY )
 
 		while( i-- > 0 ){
 			let d = this.calculatePointDistance(x, y, snaps[i], calculateX, calculateY)
 			if( d < distance ){
 				distance = d
-				closest = snaps[i]
+				point = snaps[i]
+				index = i
 			}
 		}
 		
-		return closest;
-	}
-
-	calculateFrictionFn( friction ){
-		let condition = []
-		if( friction.influenceArea ){}
+		return { point, index }
 	}
 
 	calculatePointDistance( x0, y0, {x,y}, calculateX, calculateY){
 		return Math.pow(x0 - (x || 0), 2) * calculateX + Math.pow(y0 - (y || 0 ), 2) * calculateY
 	}
+
+	getPan(){
+		let pan = new Animated.ValueXY
+		pan.x = this.props.animatedValueX || this.pan.x
+		pan.y = this.props.animatedValueY || this.pan.y
+		return pan
+	}
 }
 
-const areaComparators = {
-	top: (value) => (position) => position.y < value,
-	right: (value) => (position) => position.x > value,
-	bottom: (value) => (position) => position.y > value,
-	left: (value) => (position) => position.x < value,
+let combineAreaFactors = function( areas, offset ){
+	let combined = [];
+	areas.forEach( a => combined.push( getAreaFactor(a, offset) ) )
+	return function( coords ){
+		let result = { ...coords }
+		combined.forEach( c => {
+			result = c( result )
+		})
+		return result;
+	}
+}
+
+let offsetKeys = {
+	top: 'y', right: 'x', bottom: 'y', left: 'x'
+}
+
+let getAreaFactor = function( area, offset ){
+	let comparators = [];
+	for( let key in area.influenceArea ){
+		comparators.push(
+			areaFrictionFunctions[key]( area.influenceArea[key] - offset[ offsetKeys[key] ], area.damping )
+		)
+	}
+
+	return function( coords ){
+		let result = coords;
+		comparators.forEach( c => {
+			result = c( result )
+		})
+		return result;
+	}
+}
+
+const areaFrictionFunctions = {
+	top: function( value, friction ){ 
+		let calculator = areaFrictionCalculators.negative( value, friction )
+
+		return function( coords ){
+			return {
+				x: coords.x,
+				y: coords.y * calculator( coords.y )
+			}
+		}
+	},
+	right: function( value, friction ){ 
+		let calculator = areaFrictionCalculators.positive( value, friction )
+
+		return function( coords ){
+			return {
+				x: coords.x * calculator( coords.x ),
+				y: coords.y
+			}
+		}
+	},
+	bottom: function( value, friction ){ 
+		let calculator = areaFrictionCalculators.positive( value, friction )
+
+		return function( coords ){
+			return {
+				x: coords.x,
+				y: coords.y * calculator( coords.y )
+			}
+		}
+	},
+	left: function( value, friction ){ 
+		let calculator = areaFrictionCalculators.negative( value, friction )
+
+		return function( coords ){
+			return {
+				x: coords.x * calculator( coords.x ),
+				y: coords.y
+			}
+		}
+	},
+}
+
+const areaFrictionCalculators = {
+	// top, left
+	negative: (value, friction) => {
+		return function( position ){
+			let factors = calculateFrictionFactors( position, value )
+			return (1-friction)*factors[0] + factors[1]
+		}
+	},
+	// right, bottom
+	positive: (value, friction) => {
+		return function( position ){
+			let factors = calculateFrictionFactors( position, value )
+			return factors[0] + (1-friction)*factors[1]
+		}
+	}
+}
+
+// The idea is: when we cross a limit the friction starts
+// This return an array with 2 values [proportionBeforeLimit, proportionAfterLimit]
+function calculateFrictionFactors( coord, limit ){
+	let init = 0 - limit
+	let end = coord - limit
+	if( end <= 0 ){
+		return [1, 0]
+	}
+	else if( init >= 0 ){
+		return [0, 1]
+	}
+
+	init = init * -1
+	let total = init + end
+	return [ init/total, end/total]
 }
