@@ -1,6 +1,6 @@
 import {Easing} from 'react-native'
 
-export default function TransitionNarrowDefault( indexes, layout ){
+export default function TransitionMobileDefault( indexes, layout ){
 	return {
 		styles: {
 			left: {

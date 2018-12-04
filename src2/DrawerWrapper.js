@@ -23,6 +23,8 @@ export default class DrawerWrapper extends Component {
 			collapsible && styles.collapsibleOverlay
 		]
 
+		console.log( collapsible )
+
 		return (
 			<Animated.View style={ containerStyles } onLayout={ e => this.updateLayout(e) }>
 				<Interactable.View styles={ drawerStyles }>
