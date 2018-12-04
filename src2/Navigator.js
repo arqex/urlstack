@@ -45,6 +45,8 @@ export default class Navigator extends Component {
 		return (
 			<View style={ styles.container }>
 				<DrawerWrapper router={ router }
+					transition={ modalTransition.dock }
+					indexes={ indexes.stack }
 					collapsible={ transition.collapsibleDrawer }
 					Drawer={ DrawerComponent } />
 				<ScreenStack router={ router }
