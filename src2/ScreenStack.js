@@ -2,6 +2,7 @@ import React, {Component} from 'react'
 import {Animated, View, StyleSheet} from 'react-native'
 import memoize from './utils/memoize'
 import ScreenWrapper from './ScreenWrapper'
+import animatedStyles from './utils/animatedStyles'
 
 export default class ScreenStack extends Component {
 	constructor( props ){
@@ -23,15 +24,17 @@ export default class ScreenStack extends Component {
 
 	render(){
 		let { stack, router } = this.props
+		let containerStyles = [
+			styles.container,
+			this.animatedStyles
+		]
 
 		return (
-			<View style={ styles.container }>
+			<Animated.View style={containerStyles}>
 				<View style={styles.stack} onLayout={ e => this.updateLayout(e) }>
 					{ this.renderScreens(router, stack) }
 				</View>
-				<View style={ styles.modal }>
-				</View>
-			</View>
+			</Animated.View>
 		)
 	}
 	
@@ -65,10 +68,11 @@ export default class ScreenStack extends Component {
 
 	updateLayout( e ){
 		this.setState({ layout: e.nativeEvent.layout })
+		this.animatedStyles = animatedStyles(this.props.stackTransition, this.props.stackIndexes, e.nativeEvent.layout )
 	}
 
 	componentDidUpdate() {
-		let { stack, index } = this.props
+		let { stack, index, stackTransition,  } = this.props
 		let indexes = this.calculateIndexes( this.state.indexes, stack, this.previousIndex )
 
 		// Check if the indexes has changed
@@ -171,6 +175,5 @@ let styles = StyleSheet.create({
 	drawer: {},
 	stack: {
 		height: '100%', width: '100%'
-	},
-	modal: {}
+	}
 })

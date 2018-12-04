@@ -40,6 +40,7 @@ export default class Navigator extends Component {
 		let transition = this.getCurrentTransition( transitions, width, height )
 		let modalTransition = this.getModalTransitions( transition )
 		let { stack, index } = this.getScreenStack( router.stack, router.activeIndex )
+		let layout = { width, height }
 
 		return (
 			<View style={ styles.container }>
@@ -51,12 +52,13 @@ export default class Navigator extends Component {
 					stackTransition={ modalTransition.stack }
 					stackIndexes={ indexes.stack }
 					stack={ stack }
-					index={ index } />
+					index={ index }
+					layout={ layout } />
 				<ModalWrapper router={ router }
 					item={ this.getModalItem( router.stack ) }
 					transition={ modalTransition.modal }
 					indexes={ indexes.modal }
-					layout={ {width, height} } />
+					layout={ layout } />
 			</View>
 		)
 	}
