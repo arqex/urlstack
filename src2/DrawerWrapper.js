@@ -6,6 +6,7 @@ import Interactable from 'react-interactable'
 export default class DrawerWrapper extends Component {
 	constructor(props){
 		super(props)
+		this.drawerWidth = 300;
 	}
 
 	render(){
@@ -23,40 +24,75 @@ export default class DrawerWrapper extends Component {
 			collapsible && styles.collapsibleOverlay
 		]
 
-		console.log( collapsible )
+		let snapPoints = [
+			{ x: 0 }, {x: this.drawerWidth}
+		];
 
 		return (
-			<Animated.View style={ containerStyles } onLayout={ e => this.updateLayout(e) }>
-				<Interactable.View styles={ drawerStyles }>
-					<Drawer router={ router } />
-				</Interactable.View>
+			<Animated.View style={ containerStyles }>
 				<View style={ overlayStyles }></View>
+				<Interactable.View dragEnabled={ collapsible } horizontalOnly={ true } snapPoints={ snapPoints }>
+					<View style={ drawerStyles }>
+						<View style={ styles.drawerBg } />
+						<Drawer router={ router } onLayout={ e => this.updateLayout(e) } />
+						<View style={ styles.dragHandle } />
+					</View>
+				</Interactable.View>
 			</Animated.View>
 		)
 	}
 	
 	updateLayout( e ){
-		this.animatedStyles = animatedStyles(this.props.transition, this.props.indexes, e.nativeEvent.layout )
+		let {layout} = e.nativeEvent.layout;
+
+		this.animatedStyles = animatedStyles(this.props.transition, this.props.indexes, layout );
+		this.drawerWidth = layout.width;
 		this.forceUpdate();
 	}
 }
 
 let styles = StyleSheet.create({
 	container: {
-		backgroundColor: '#fff',
-		zIndex: 10
+    position: 'absolute',
+		top: 0, bottom: 0, left: 0,
+		width: '100%',
+    flexDirection: 'row-reverse',
+		transform: [{ translateX: '-100%'}],
+		zIndex: 2000,
+		backgroundColor: '#e0e0e0',
 	},
 	collapsibleDrawer: {
-		display: 'none',
-		position: 'absolute',
+		
 	},
 	drawer: {
-
+    left: 0,
+    width: '100%',
+    flex: 1,
+		backgroundColor: '#e0e0e0',
+		position: 'relative',
+		zIndex: 20000
+	},
+	drawerBg: {
+		backgroundColor: 'blue',
+		width: 4000,
+		position: 'absolute',
+		top: 0, bottom: 0, right: 0
+	},
+	dragHandle: {
+		width: 40,
+		top: 0, bottom: 0, right: -20,
+		backgroundColor: 'green',
+		position: 'absolute',
+		zIndex: 10
 	},
 	overlay: {
-		backgroundColor: 'red'
+		backgroundColor: 'red',
+		height: '100%',
+		width: '100%',
+		position: 'absolute',
+		left: '100%',
+		zIndex: -1
 	},
 	collapsibleOverlay: {
-		display: 'none'
 	}
 })
