@@ -1,2 +1,2 @@
-import Navigator from './src2/Navigator';
-export {Navigator};
+import Router from './src2/Router';
+export default Router;
