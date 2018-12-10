@@ -1061,28 +1061,28 @@
 	// So there is a new stack for every tab
 
 	function create(routes) {
+	  var router = urlhub_1.create({
+	    strategy: hashStrategy_1
+	  }); // callbacks registered for be called on route changes
+
+	  var callbacks = [];
 	  var stackRouter = {
 	    // The actual urlhub router
-	    router: urlhub_1.create({
-	      strategy: hashStrategy_1
-	    }),
+	    router: router,
 	    // The stack of screens in place, with nested tabs [{Screen, route, isTabs, isModal, key}]
 	    stack: [],
 	    // The current screen in the view port
 	    activeIndex: -1,
 	    // What to do when the URL changes
 	    onChange: function onChange(handler) {
-	      return this.router.onChange(createRouteChanger(this, handler, routes));
-	    },
-	    // Start listening to url changes
-	    start: function start() {
-	      return this.router.start();
+	      callbacks.push(handler);
 	    }
-	  };
-	  stackRouter.router.setRoutes(routes); // stackRouter.router.onChange( createRouteChanger( stackRouter, () => {}, routes ) );
-	  // Somem extra methods from urlhub
+	  }; // Set routes and our callback that will generate the stacks
 
-	  ['onBeforeChange', 'push', 'replace'].forEach(function (method) {
+	  router.setRoutes(routes);
+	  router.onChange(createRouteChanger(stackRouter, routes, callbacks)); // Some extra methods from urlhub
+
+	  ['start', 'stop', 'onBeforeChange', 'push', 'replace'].forEach(function (method) {
 	    stackRouter[method] = function () {
 	      return this.router[method].apply(this.router, arguments);
 	    };
@@ -1090,53 +1090,52 @@
 	  return stackRouter;
 	} // Helper to translate urlhub's location changes to the model {stack, index}
 
-	function createRouteChanger(router, handler, routes) {
-	  var routeHierarchy = getHierarchy(routes);
+	function createRouteChanger(router, routes, callbacks) {
+	  // Get the hierarchy of absolute routes
+	  var routeData = getRouteData(routes);
 
 	  var onChange = function onChange(location) {
-	    var nestedStack = createNestedStack(location, routeHierarchy);
+	    // Create a nested stack based on the current location
+	    var nestedStack = createNestedStack(location, routeData); // Merge the nested stack with the one currently held by the router
 
-	    var _mergeStacks = mergeStacks(router.stack, nestedStack, routeHierarchy),
+	    var _mergeStacks = mergeStacks(router.stack, nestedStack, routeData),
 	        stack = _mergeStacks.stack,
-	        index = _mergeStacks.index;
+	        index = _mergeStacks.index; // Update attributes of the router
+
 
 	    router.location = location;
 	    router.stack = stack;
-	    router.activeIndex = index;
-	    return handler(location);
+	    router.activeIndex = index; // Call user's callbacks
+
+	    callbacks.forEach(function (clbk) {
+	      return clbk(location);
+	    });
 	  };
 
 	  return onChange;
 	}
 
-	function createNestedStack(location, routeHierarchy) {
-	  var matches = location.matches,
-	      matchIds = location.matchIds;
+	function createNestedStack(location, routeData) {
+	  var matchIds = location.matchIds;
 	  var inTab = false;
 	  var stack = [];
-	  matches.forEach(function (screen, i) {
+	  matchIds.forEach(function (route) {
+	    var data = routeData[route];
+
 	    if (inTab) {
-	      var tabStack = inTab.tabs.stack;
-	      inTab.tabs.index = getTabIndex(matchIds[i], tabStack);
-	      tabStack[inTab.tabs.index].location = location;
+	      // If we are in a tab we won't push this route to the main stack, but to the tab one
+	      inTab.tabs.stack.push(createStackItem(route, location, data)); // Get out the stack
+
 	      inTab = false;
 	      return;
 	    }
 
-	    var options = screen.urlstackOptions || {};
-	    var item = {
-	      Screen: screen,
-	      route: matchIds[i],
-	      isTabs: !!options.tabs,
-	      isModal: !!options.modal,
-	      location: location,
-	      key: generateKey()
-	    };
+	    var item = createStackItem(route, location, data);
 
 	    if (item.isTabs) {
 	      item.tabs = {
 	        index: 0,
-	        stack: createTabStack(routeHierarchy[item.route], routeHierarchy)
+	        stack: []
 	      };
 	      inTab = item;
 	    }
@@ -1146,48 +1145,18 @@
 	  return stack;
 	}
 
-	function createTabStack(tabs, routeHierarchy) {
-	  var stack = [];
-
-	  for (var route in tabs) {
-	    var options = tabs[route].urlstackOptions || {};
-	    var item = {
-	      Screen: tabs[route],
-	      route: route,
-	      location: false,
-	      // Location will be set when mounted
-	      isTabs: !!options.tabs,
-	      isModal: !!options.modal,
-	      key: generateKey()
-	    };
-
-	    if (item.isTabs) {
-	      item.tabs = {
-	        index: 0,
-	        stack: createTabStack(routeHierarchy[item.route], routeHierarchy)
-	      };
-	    }
-
-	    stack.push(item);
-	  }
-
-	  return stack;
+	function createStackItem(route, location, routeData) {
+	  return {
+	    Screen: routeData.cb,
+	    route: route,
+	    isTabs: !!routeData.isTabs,
+	    isModal: !!routeData.isModal,
+	    location: location,
+	    key: generateKey()
+	  };
 	}
 
-	function getTabIndex(route, tabs) {
-	  var i = tabs.length;
-
-	  while (i-- > 0) {
-	    if (tabs[i].route === route) {
-	      return i;
-	    }
-	  }
-
-	  console.warn('Tab index not found for route: ' + route);
-	  return 0;
-	}
-
-	function mergeStacks(currentStack, candidateStack, routeHierarchy) {
+	function mergeStacks(currentStack, candidateStack, routeData) {
 	  var nextStack = [];
 	  var i = 0;
 	  var sameRoot = true;
@@ -1197,7 +1166,7 @@
 	  while (current || candidate) {
 	    if (sameRoot && current && candidate) {
 	      if (current.Screen === candidate.Screen) {
-	        nextStack.push(mergeItems(current, candidate, routeHierarchy));
+	        nextStack.push(mergeItems(current, candidate, routeData));
 	      } else {
 	        sameRoot = false;
 	        nextStack.push(candidate);
@@ -1220,7 +1189,7 @@
 	  };
 	}
 
-	function mergeItems(current, candidate, routeHierarchy) {
+	function mergeItems(current, candidate, routeData) {
 	  var item = Object.assign({}, candidate, {
 	    key: current.key
 	  });
@@ -1236,27 +1205,34 @@
 
 	  return item;
 	}
+	/**
+	 * Transform the route definition for urlhub to an object where the keys are the absolute
+	 * path of every route, this way we don't need to navigate through childrens to get
+	 * the information of a router given its path.
+	 * 
+	 * @param {*} routes The route object for urlhub
+	 * @param {*} parentRoute The path of the parent route to get the absolute path of children
+	 */
 
-	function getHierarchy(routes) {
+
+	function getRouteData(routes) {
 	  var parentRoute = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
 	  var h = {};
 	  routes.forEach(function (r) {
 	    var route = parentRoute + r.path;
-	    if (!r.children) return h[route] = false;
-	    var children = getHierarchy(r.children, r.path);
-	    h[route] = cleanChildrenHierarchy(route, r.children);
-	    h = Object.assign({}, h, children);
+	    h[route] = r;
+
+	    if (r.children) {
+	      var childrenData = getRouteData(r.children, route);
+	      h = Object.assign({}, h, childrenData);
+	    }
 	  });
 	  return h;
 	}
+	/**
+	 * Generate a random key to identify a route
+	 */
 
-	function cleanChildrenHierarchy(parentRoute, routes) {
-	  var hierarchy = {};
-	  routes.forEach(function (r) {
-	    hierarchy[parentRoute + r.path] = r.cb;
-	  });
-	  return hierarchy;
-	}
 
 	function generateKey() {
 	  var number = Math.floor(Math.random() * 100000); // Make sure it starts with a letter - j is first letter of my name :)

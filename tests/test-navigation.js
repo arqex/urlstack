@@ -14,9 +14,9 @@ var routes = [
 			{path: '/moreInfo', cb: 'PersonMoreInfo' }
 		]}
 	]},
-	{ path: '/simpleScreen', cb: 'PersonMoreInfo' },
+	{ path: '/simpleScreen', cb: 'Simple screen' },
 	{ path: '/modal', cb: 'Modal', isModal: true },
-	{ path: '*', cb: 'Welcome' }
+	{ path: '/*', cb: 'Welcome' }
 ];
 
 function createRouter(){
@@ -26,11 +26,30 @@ function createRouter(){
 }
 
 var router = createRouter()
-describe( 'First test suite', function(){
-  it('First test', function(){
+describe( 'Router start and stop', function(){
+  it('Stopped router shouldn´t call the listeners', function( done ){
 		var router = createRouter()
-		router.push('/tabs')
-		console.log( window.location.href )
-    expect(true).toBe(true)
+		var callCount = 0
+
+		
+		// Urlhub push method is asynchronous, let add a listener to the change event
+		router.onChange( () => {
+			var stack = router.stack;
+			expect( stack.length ).toBe( 1 )
+			expect( stack[0].Screen ).toBe('Simple screen')
+
+			callCount++;
+
+			router.stop();
+
+			router.push('/modal');
+			setTimeout( () => {
+				// the listener had to be called just once, because we stopped the router
+				expect(callCount).toBe(1);
+				done()
+			}, 50 )
+		})
+		
+		router.push('/simpleScreen');
   })
 })
