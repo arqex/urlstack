@@ -122,8 +122,21 @@ function createStackItem ( route, location, routeData ){
 		isTabs: !!routeData.isTabs,
 		isModal: !!routeData.isModal,
 		location: location,
+		routePath: getRoutePath( route, location.pathname ),
 		key: generateKey()
 	}
+}
+
+function getRoutePath( route, pathname ){
+	let routeParts = route.split('/');
+	let pathParts = pathname.split('/');
+	let routePath = [];
+
+	routeParts.forEach( (p, i) => {
+		routePath.push( pathParts[i] )
+	})
+
+	return routePath.join('/');
 }
 
 function mergeStacks( currentStack, candidateStack, routeData ){
@@ -137,6 +150,11 @@ function mergeStacks( currentStack, candidateStack, routeData ){
 		if (sameRoot && current && candidate) {
 			if (current.Screen === candidate.Screen) {
 				nextStack.push( mergeItems( current, candidate, routeData ) )
+				if( current.routePath !== candidate.routePath ){
+					// If the pathnames are not the same, some parameter might have changed
+					// discard the rest of the current stack. We already have reused the id
+					sameRoot = false
+				}
 			}
 			else {
 				sameRoot = false;

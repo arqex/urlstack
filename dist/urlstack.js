@@ -1,7 +1,7 @@
 /*!
  * *//* eslint-disable */
 /*!
- * urlstack v0.1.2
+ * urlstack v0.2.0
  * (c) 2018-present Javier Marquez
  * Released under the MIT License.
  */
@@ -1152,8 +1152,19 @@
 	    isTabs: !!routeData.isTabs,
 	    isModal: !!routeData.isModal,
 	    location: location,
+	    routePath: getRoutePath(route, location.pathname),
 	    key: generateKey()
 	  };
+	}
+
+	function getRoutePath(route, pathname) {
+	  var routeParts = route.split('/');
+	  var pathParts = pathname.split('/');
+	  var routePath = [];
+	  routeParts.forEach(function (p, i) {
+	    routePath.push(pathParts[i]);
+	  });
+	  return routePath.join('/');
 	}
 
 	function mergeStacks(currentStack, candidateStack, routeData) {
@@ -1167,6 +1178,12 @@
 	    if (sameRoot && current && candidate) {
 	      if (current.Screen === candidate.Screen) {
 	        nextStack.push(mergeItems(current, candidate, routeData));
+
+	        if (current.routePath !== candidate.routePath) {
+	          // If the pathnames are not the same, some parameter might have changed
+	          // discard the rest of the current stack. We already have reused the id
+	          sameRoot = false;
+	        }
 	      } else {
 	        sameRoot = false;
 	        nextStack.push(candidate);
