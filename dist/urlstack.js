@@ -1142,6 +1142,13 @@
 
 	    stack.push(item);
 	  });
+
+	  if (inTab) {
+	    // This means that the last screen in the hierarchy was a tab wrapper
+	    // We need to fill the tab stack at least with one ticket
+	    inTab.tabs.stack.push(getFirstTab(routeData[matchIds[matchIds.length - 1]]));
+	  }
+
 	  return stack;
 	}
 
@@ -1221,6 +1228,21 @@
 	  }
 
 	  return item;
+	}
+
+	function getFirstTab(tabScreen) {
+	  var i = 0;
+	  var child;
+
+	  while (i < tabScreen.children.length) {
+	    child = tabScreen.children[i];
+
+	    if (!child.isTabs && !child.isModal) {
+	      return child;
+	    }
+	  }
+
+	  console.warn('Urlstack: Hit a tabs URL without any children: ' + tabScreen.path);
 	}
 	/**
 	 * Transform the route definition for urlhub to an object where the keys are the absolute

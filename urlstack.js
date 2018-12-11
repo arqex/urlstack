@@ -112,6 +112,12 @@ function createNestedStack( location, routeData ) {
 		stack.push(item);
 	})
 
+	if( inTab ){
+		// This means that the last screen in the hierarchy was a tab wrapper
+		// We need to fill the tab stack at least with one ticket
+		inTab.tabs.stack.push( getFirstTab( routeData[ matchIds[matchIds.length - 1]] ) )
+	}
+
 	return stack
 }
 
@@ -191,6 +197,20 @@ function mergeItems( current, candidate, routeData ){
 		item.tabs.stack[ nextIndex ].location = candidate.tabs.stack[ nextIndex ].location;
 	}
 	return item;
+}
+
+function getFirstTab( tabScreen ){
+	let i = 0;
+	let child;
+
+	while( i < tabScreen.children.length ){
+		child = tabScreen.children[i]
+		if( !child.isTabs && !child.isModal ){
+			return child;
+		}
+	}
+	
+	console.warn('Urlstack: Hit a tabs URL without any children: ' + tabScreen.path )
 }
 
 /**
