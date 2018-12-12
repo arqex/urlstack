@@ -1134,7 +1134,7 @@
 
 	    if (item.isTabs) {
 	      item.tabs = {
-	        index: 0,
+	        activeIndex: 0,
 	        stack: []
 	      };
 	      inTab = item;
@@ -1146,7 +1146,10 @@
 	  if (inTab) {
 	    // This means that the last screen in the hierarchy was a tab wrapper
 	    // We need to fill the tab stack at least with one ticket
-	    inTab.tabs.stack.push(getFirstTab(routeData[matchIds[matchIds.length - 1]]));
+	    var tab = routeData[matchIds[matchIds.length - 1]];
+	    var child = getFirstTab(tab);
+	    var route = location.pathname + child.path;
+	    inTab.tabs.stack.push(createStackItem(route, location, routeData[route]));
 	  }
 
 	  return stack;
@@ -1169,7 +1172,7 @@
 	  var pathParts = pathname.split('/');
 	  var routePath = [];
 	  routeParts.forEach(function (p, i) {
-	    routePath.push(pathParts[i]);
+	    routePath.push(pathParts[i] || p);
 	  });
 	  return routePath.join('/');
 	}
@@ -1219,9 +1222,9 @@
 	  });
 
 	  if (item.tabs) {
-	    var nextIndex = candidate.tabs.index;
+	    var nextIndex = candidate.tabs.activeIndex;
 	    item.tabs = {
-	      index: nextIndex,
+	      activeIndex: nextIndex,
 	      stack: current.tabs.stack.slice()
 	    };
 	    item.tabs.stack[nextIndex].location = candidate.tabs.stack[nextIndex].location;

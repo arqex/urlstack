@@ -34,15 +34,16 @@ function createRouter( initialRoute ){
 	return r;
 }
 
-function tryStacks( router, done, states ){
+function tryStacks( router, done, states, getTarget ){
 	var i = 0;
 	router.onChange( () => {
 		var expected = states[i];
 		if( !expected ) return;
 
-		expect( router.stack.length ).toBe( expected.length );
-		expect( router.activeIndex ).toBe( expected.activeIndex );
-		expect( router.stack[ router.activeIndex ].Screen ).toBe( expected.screen );
+		var target = getTarget( router )
+		expect( target.stack.length ).toBe( expected.length );
+		expect( target.activeIndex ).toBe( expected.activeIndex );	
+		expect( target.stack[ target.activeIndex ].Screen ).toBe( expected.screen );
 
 		i++;
 		if( i < states.length ){
@@ -53,6 +54,13 @@ function tryStacks( router, done, states ){
 		}
 	});
 	router.push( states[i].route )
+}
+
+function tryMainStack( router, done, states ){
+	return tryStacks( router, done, states, router => router )
+}
+function tryTabStack( router, done, states ){
+	return tryStacks( router, done, states, router => router.stack[0].tabs )
 }
 
 
@@ -92,7 +100,7 @@ describe( 'Router start and stop', function(){
 		expect( router.stack.length ).toBe( 1 )
 		expect( router.stack[0].Screen ).toBe('Welcome')
 
-		tryStacks( router, done, [
+		tryMainStack( router, done, [
 			{ route: '/simpleScreen', length: 1, activeIndex: 0, screen: 'Simple screen' },
 			{ route: '/somethingUnknown', length: 1, activeIndex: 0, screen: 'Welcome' }
 		]);
@@ -113,7 +121,7 @@ describe( 'Stack tests', function() {
 	it('Pushing routes should keep screens if we are in the same stack', function( done ){
 		var router = createRouter('/list')
 
-		tryStacks( router, done, [
+		tryMainStack( router, done, [
 			{ route: '/list/12', length: 2, activeIndex: 1, screen: 'List item' },
 			{ route: '/list/12/moreInfo', length: 3, activeIndex: 2, screen: 'List item moreinfo'},
 			{ route: '/list/12', length: 3, activeIndex: 1, screen: 'List item' },
@@ -135,7 +143,7 @@ describe( 'Stack tests', function() {
 	it('Pushing routes with different roots should unmount the stacks', function( done ){
 		var router = createRouter('/unknown')
 
-		tryStacks( router, done, [
+		tryMainStack( router, done, [
 			{ route: '/list/9', length: 2, activeIndex: 1, screen: 'List item' },
 			{ route: '/simpleScreen', length: 1, activeIndex: 0, screen: 'Simple screen' },
 			{ route: '/list/13/moreInfo', length: 3, activeIndex: 2, screen: 'List item moreinfo'}
@@ -152,7 +160,7 @@ describe('Tab stack tests', function(){
 		expect( mainStack.length ).toBe( 1 )
 		expect( stackItem.Screen ).toBe('Tabs')
 		expect( stackItem.tabs.stack.length ).toBe( 1 )
-		expect( stackItem.tabs.stack[ stackItem.tabs.index ].Screen  ).toBe('Tab 1')
+		expect( stackItem.tabs.stack[ stackItem.tabs.activeIndex ].Screen  ).toBe('Tab 1')
 	})
 	
 	it('Loading a tab that is not the first should only load that tab', function(){
@@ -162,6 +170,21 @@ describe('Tab stack tests', function(){
 		expect( mainStack.length ).toBe( 1 )
 		expect( stackItem.Screen ).toBe('Tabs')
 		expect( stackItem.tabs.stack.length ).toBe( 1 )
-		expect( stackItem.tabs.stack[ stackItem.tabs.index ].Screen  ).toBe('Tab 2')
+		expect( stackItem.tabs.stack[ stackItem.tabs.activeIndex ].Screen  ).toBe('Tab 2')
+	})
+
+	it('Tab stack always follow the definition object', function( done ){
+		var router = createRouter('/tabs/tab3')
+		var tabs = router.stack[0].tabs
+		
+		expect( tabs.stack.length ).toBe( 1 )
+		expect( tabs.stack[ tabs.activeIndex ].Screen ).toBe('Tab 3')
+
+		tryTabStack( router, done, [
+			{ route: '/tabs/tab2', length: 2, activeIndex: 0, screen: 'Tab 2' },
+			{ route: '/tabs/tab3', length: 2, activeIndex: 1, screen: 'Tab 3' },
+			{ route: '/tabs/tab1', length: 3, activeIndex: 0, screen: 'Tab 1' },
+			{ route: '/tabs/tab3', length: 3, activeIndex: 2, screen: 'Tab 3' }
+		])
 	})
 })

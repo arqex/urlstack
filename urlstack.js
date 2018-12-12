@@ -105,7 +105,7 @@ function createNestedStack( location, routeData ) {
 		let item = createStackItem( route, location, data );
 
 		if (item.isTabs) {
-			item.tabs = { index: 0, stack: [] };
+			item.tabs = { activeIndex: 0, stack: [] };
 			inTab = item;
 		}
 
@@ -115,7 +115,10 @@ function createNestedStack( location, routeData ) {
 	if( inTab ){
 		// This means that the last screen in the hierarchy was a tab wrapper
 		// We need to fill the tab stack at least with one ticket
-		inTab.tabs.stack.push( getFirstTab( routeData[ matchIds[matchIds.length - 1]] ) )
+		var tab = routeData[ matchIds[matchIds.length - 1] ]
+		var child = getFirstTab( tab )
+		var route = location.pathname + child.path
+		inTab.tabs.stack.push( createStackItem(route, location, routeData[route]) )
 	}
 
 	return stack
@@ -139,7 +142,7 @@ function getRoutePath( route, pathname ){
 	let routePath = [];
 
 	routeParts.forEach( (p, i) => {
-		routePath.push( pathParts[i] )
+		routePath.push( pathParts[i] || p )
 	})
 
 	return routePath.join('/');
@@ -189,9 +192,9 @@ function mergeStacks( currentStack, candidateStack, routeData ){
 function mergeItems( current, candidate, routeData ){
 	let item = { ...candidate, key: current.key }
 	if( item.tabs ){
-		let nextIndex = candidate.tabs.index;
+		let nextIndex = candidate.tabs.activeIndex;
 		item.tabs = {
-			index: nextIndex,
+			activeIndex: nextIndex,
 			stack: current.tabs.stack.slice()
 		}
 		item.tabs.stack[ nextIndex ].location = candidate.tabs.stack[ nextIndex ].location;
