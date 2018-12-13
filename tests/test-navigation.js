@@ -187,4 +187,38 @@ describe('Tab stack tests', function(){
 			{ route: '/tabs/tab3', length: 3, activeIndex: 2, screen: 'Tab 3' }
 		])
 	})
+
+	it('Navigation in tab children should prevent other tabs.', function( done ){
+		var router = createRouter('/tabs/tab2')
+		var firstTabPush = clbk => {
+			tryTabStack( router, clbk, [{route: '/tabs/tab3', length: 2, activeIndex: 1, screen: 'Tab 3'}] )
+		}
+		var firstTabChildren = clbk => {
+			tryMainStack( router, clbk, [{route: '/tabs/tab3/12', length: 2, activeIndex: 1, screen: 'Tab 3 details'}] )
+		}
+		var tabStackMaintained = () => {
+			let tabs = router.stack[0].tabs
+			expect( tabs.stack.length ).toBe( 2 )
+			expect( tabs.stack[ tabs.activeIndex ].Screen ).toBe('Tab 3')
+		}
+		var stackMaintained = clbk => {
+			tabStackMaintained()
+			tryMainStack( router, clbk, [
+				{route: '/tabs/tab3/12/moreInfo', length: 3, activeIndex: 2, screen: 'Tab 3 moreinfo'},
+				{route: '/tabs/tab3', length: 3, activeIndex: 0, screen: 'Tabs'},
+			])
+		}
+		var bothStacksMaintained = clbk => {
+			tabStackMaintained()
+			clbk()
+		}
+
+		firstTabPush(
+			() => firstTabChildren(
+				() => stackMaintained(
+					() => bothStacksMaintained( done )
+				)
+			)
+		)
+	})
 })

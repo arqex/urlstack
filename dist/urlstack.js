@@ -1222,12 +1222,33 @@
 	  });
 
 	  if (item.tabs) {
-	    var nextIndex = candidate.tabs.activeIndex;
+	    var tabOrder = routeData[current.route].children;
+	    var toAdd = candidate.tabs.stack[0];
+	    var tabStack = current.tabs.stack.slice();
+	    var i = 0;
+	    var added = false;
+	    tabOrder.forEach(function (tab) {
+	      if (added) return;
+	      var route = current.route + tab.path;
+	      var currentTab = tabStack[i];
+
+	      if (toAdd.route === route) {
+	        if (currentTab && currentTab.route === route) {
+	          toAdd.key = currentTab.key;
+	          tabStack[i] = toAdd;
+	        } else {
+	          tabStack.splice(i, 0, toAdd);
+	        }
+
+	        added = true;
+	      } else if (currentTab && currentTab.route === route) {
+	        i++;
+	      }
+	    });
 	    item.tabs = {
-	      activeIndex: nextIndex,
-	      stack: current.tabs.stack.slice()
+	      stack: tabStack,
+	      activeIndex: i
 	    };
-	    item.tabs.stack[nextIndex].location = candidate.tabs.stack[nextIndex].location;
 	  }
 
 	  return item;

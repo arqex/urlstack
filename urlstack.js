@@ -192,12 +192,35 @@ function mergeStacks( currentStack, candidateStack, routeData ){
 function mergeItems( current, candidate, routeData ){
 	let item = { ...candidate, key: current.key }
 	if( item.tabs ){
-		let nextIndex = candidate.tabs.activeIndex;
+		let tabOrder = routeData[ current.route ].children
+		let toAdd = candidate.tabs.stack[0]
+		let tabStack = current.tabs.stack.slice()
+		let i = 0
+		let added = false
+		tabOrder.forEach( tab => {
+			if( added ) return;
+
+			let route = current.route + tab.path;
+			let currentTab = tabStack[i]
+			if( toAdd.route === route ){
+				if( currentTab && currentTab.route === route ){
+					toAdd.key = currentTab.key
+					tabStack[i] = toAdd
+				}
+				else {
+					tabStack.splice( i, 0, toAdd )
+				}
+				added = true;
+			}
+			else if( currentTab && currentTab.route === route ){
+				i++;
+			}
+		})
+
 		item.tabs = {
-			activeIndex: nextIndex,
-			stack: current.tabs.stack.slice()
+			stack: tabStack,
+			activeIndex: i 
 		}
-		item.tabs.stack[ nextIndex ].location = candidate.tabs.stack[ nextIndex ].location;
 	}
 	return item;
 }
