@@ -63,6 +63,10 @@ function tryTabStack( router, done, states ){
 	return tryStacks( router, done, states, router => router.stack[0].tabs )
 }
 
+function tryModalStack( router, done, states ){
+	return tryStacks( router, done, states, router => router.modal.stack )
+}
+
 
 /////////////
 // TEST CASES
@@ -221,4 +225,20 @@ describe('Tab stack tests', function(){
 			)
 		)
 	})
+
+	it('Navigate to a tab should not discard current tab children', function( done ){
+		var router = createRouter('/tabs/tab3/12/moreInfo');
+		var checkTabs = () => {
+			let tabs = router.stack[0].tabs
+			expect( tabs.stack.length ).toBe( 2 )
+			expect( tabs.stack[ tabs.activeIndex ].Screen ).toBe('Tab 2')
+			tryMainStack(router, done, [{ route: '/simpleScreen', length: 1, activeIndex: 0, screen: 'Simple screen' }])
+		}
+		tryMainStack( router, checkTabs, [{route: '/tabs/tab2', length: 3, activeIndex: 0, screen: 'Tabs'}] )
+	})
+})
+
+describe('Modal routing', function(){
+	var router = createRouter('/tabs/tab3/12/moreInfo');
+	router.push('/modal')
 })
