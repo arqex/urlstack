@@ -5,7 +5,9 @@ module.exports = function (config) {
 
         files: [
           '../dist/urlstack.js',
+          'routedata.js',
           'test-navigation.js',
+          'test-location.js'
         ],
 
         plugins: [

@@ -1,29 +1,6 @@
 //////////////
-// Route definition
+// Route definition in routedata.js
 //////////////
-var routes = [
-	{ path: '/tabs', cb: 'Tabs', isTabs: true, children: [
-		{ path: '/tab1', cb: 'Tab 1' },
-		{ path: '/tab2', cb: 'Tab 2' },
-		{ path: '/tab3', cb: 'Tab 3', children: [
-			{ path: '/:id', cb: 'Tab 3 details', children: [
-				{ path: '/modal', cb: 'Tab Modal', isModal: true },
-				{ path: '/moreInfo', cb: 'Tab 3 moreinfo' },
-			]}
-		]}
-	]},
-	{ path: '/list', cb: 'List screen', children: [
-		{path: '/:id', cb: 'List item', children: [
-			{path: '/moreInfo', cb: 'List item moreinfo' }
-		]}
-	]},
-	{ path: '/simpleScreen', cb: 'Simple screen' },
-	{ path: '/modal', cb: 'Modal', isModal: true, children: [
-		{ path: '/child', cb: 'Modal child' }
-	] },
-	{ path: '/modalWithBackground', cb: 'Modal width background', isModal: true, backgroundRoute: '/list/12' },
-	{ path: '/*', cb: 'Welcome' }
-];
 
 //////////////////
 // HELPERS
@@ -252,7 +229,7 @@ describe('Modal routing', function(){
 		expect( router.modal.stack[0].Screen ).toBe('Modal');
 	})
 	
-	it('Starting with a modal should generate a default main stack', function(){
+	it('Starting with a modal should with a background screen', function(){
 		var router = createRouter('/modalWithBackground');
 		expect( router.stack.length ).toBe( 2 )
 		expect( router.stack[ router.activeIndex ].Screen ).toBe('List item')
