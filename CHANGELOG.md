@@ -1,3 +1,9 @@
+# v0.3.0
+* Modal stacks are working now
+* Modal stacks can be recursive
+* All stacks have the format `{stack, activeIndex}`
+* Added more tets
+
 # v0.2.0
 * Future screens are unmounted now when the current screen don't share the pathname with the preview one.
 * Adds routePath to the stack item.

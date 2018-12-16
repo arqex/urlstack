@@ -18,7 +18,10 @@ var routes = [
 		]}
 	]},
 	{ path: '/simpleScreen', cb: 'Simple screen' },
-	{ path: '/modal', cb: 'Modal', isModal: true },
+	{ path: '/modal', cb: 'Modal', isModal: true, children: [
+		{ path: '/child', cb: 'Modal child' }
+	] },
+	{ path: '/modalWithBackground', cb: 'Modal width background', isModal: true, backgroundRoute: '/list/12' },
 	{ path: '/*', cb: 'Welcome' }
 ];
 
@@ -64,7 +67,7 @@ function tryTabStack( router, done, states ){
 }
 
 function tryModalStack( router, done, states ){
-	return tryStacks( router, done, states, router => router.modal.stack )
+	return tryStacks( router, done, states, router => router.modal )
 }
 
 
@@ -239,6 +242,78 @@ describe('Tab stack tests', function(){
 })
 
 describe('Modal routing', function(){
-	var router = createRouter('/tabs/tab3/12/moreInfo');
-	router.push('/modal')
+	it('Starting with a modal should generate a default main stack', function(){
+		var router = createRouter('/modal');
+		expect( router.stack.length ).toBe( 1 )
+		expect( router.stack[ router.activeIndex ].Screen ).toBe('Welcome')
+		expect( router.modal.active ).toBe( true )
+		expect( router.modal.stack.length ).toBe( 1 )
+		expect( router.modal.activeIndex ).toBe( 0 )
+		expect( router.modal.stack[0].Screen ).toBe('Modal');
+	})
+	
+	it('Starting with a modal should generate a default main stack', function(){
+		var router = createRouter('/modalWithBackground');
+		expect( router.stack.length ).toBe( 2 )
+		expect( router.stack[ router.activeIndex ].Screen ).toBe('List item')
+		expect( router.modal.active ).toBe( true )
+		expect( router.modal.stack.length ).toBe( 1 )
+		expect( router.modal.activeIndex ).toBe( 0 )
+		expect( router.modal.stack[0].Screen ).toBe('Modal width background');
+	})
+
+	it('Getting back to the bg route deactivates the modal', function( done ){
+		var router = createRouter('/modal');
+		var checkModalStack = function(){
+			let modal = router.modal
+			expect( modal.stack.length ).toBe( 1 )
+			expect( modal.active ).toBe( false )
+			done()
+		}
+		tryMainStack( router, checkModalStack, [
+			{ route: '/simpleScreen', length: 1, activeIndex: 0, screen: 'Simple screen' }
+		])
+	})
+
+	it('Pushing a modal route preserve the current main stack', function( done ){
+		var router = createRouter('/list/12');
+		var checkModalStack = function(){
+			let modal = router.modal
+			expect( modal.stack.length ).toBe( 1 )
+			expect( modal.active ).toBe( true )
+			done()
+		}
+		tryMainStack( router, checkModalStack, [
+			{ route: '/modal', length: 2, activeIndex: 1, screen: 'List item' }
+		])
+	})
+
+	it('Modal screens can be children of others', function(){
+		var router = createRouter('/tabs/tab3/12/modal');
+
+		var tabs = router.stack[0].tabs;
+		expect( router.stack.length ).toBe( 2 )
+		expect( router.stack[ router.activeIndex ].Screen ).toBe('Tab 3 details')
+		expect( tabs.stack.length ).toBe( 1 )
+		expect( tabs.stack[ tabs.activeIndex ].Screen ).toBe('Tab 3')
+		expect( router.modal.active ).toBe( true )
+		expect( router.modal.stack.length ).toBe( 1 )
+		expect( router.modal.activeIndex ).toBe( 0 )
+		expect( router.modal.stack[0].Screen ).toBe('Tab Modal');
+	})
+
+	it('Modal screens can have children', function( done ){
+		var router = createRouter('/modal/child');
+		expect( router.stack.length ).toBe( 1 )
+		expect( router.stack[ router.activeIndex ].Screen ).toBe('Welcome')
+		expect( router.modal.active ).toBe( true )
+		expect( router.modal.stack.length ).toBe( 2 )
+		expect( router.modal.activeIndex ).toBe( 1 )
+		expect( router.modal.stack[1].Screen ).toBe('Modal child');
+		
+		tryModalStack( router, done, [
+			{ route: '/modal', length: 2, activeIndex: 0, screen: 'Modal' },
+			{ route: '/singleScreen', length: 2, activeIndex: 0, screen: 'Modal'}
+		])
+	})
 })

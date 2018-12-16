@@ -1073,6 +1073,13 @@
 	    stack: [],
 	    // The current screen in the view port
 	    activeIndex: -1,
+	    // Route cache to generate new routes
+	    _nestedStack: [],
+	    modal: {
+	      active: false,
+	      stack: [],
+	      activeIndex: -1
+	    },
 	    // What to do when the URL changes
 	    onChange: function onChange(handler) {
 	      callbacks.push(handler);
@@ -1096,16 +1103,16 @@
 
 	  var onChange = function onChange(location) {
 	    // Create a nested stack based on the current location
-	    var nestedStack = createNestedStack(location, routeData); // Merge the nested stack with the one currently held by the router
+	    var nestedStack = createNestedStack(location, routeData);
 
-	    var _mergeStacks = mergeStacks(router.stack, nestedStack, routeData),
+	    var _mergeStacks = mergeStacks(router._nestedStack || [], nestedStack, routeData),
 	        stack = _mergeStacks.stack,
-	        index = _mergeStacks.index; // Update attributes of the router
+	        index = _mergeStacks.index;
 
+	    setStacksAndIndexes(router, splitStack(stack), index, routeData); // Update attributes of the router
 
 	    router.location = location;
-	    router.stack = stack;
-	    router.activeIndex = index; // Call user's callbacks
+	    router._nestedStack = stack; // Call user's callbacks
 
 	    callbacks.forEach(function (clbk) {
 	      return clbk(location);
@@ -1153,6 +1160,63 @@
 	  }
 
 	  return stack;
+	}
+
+	function splitStack(nestedStack) {
+	  var allStacks = [];
+	  var currentStack = [];
+	  nestedStack.forEach(function (item) {
+	    if (item.isModal) {
+	      allStacks.push(currentStack);
+	      currentStack = [item];
+	    } else {
+	      currentStack.push(item);
+	    }
+	  });
+
+	  if (currentStack.length) {
+	    allStacks.push(currentStack);
+	  }
+
+	  return allStacks;
+	}
+
+	function setStacksAndIndexes(router, stacks, targetIndex, routeData) {
+	  if (!stacks[0].length) {
+	    // If the first element is empty means that we are in a modal
+	    if (!router.stack.length) {
+	      // if the currentstack is empty we need to get the default screen
+	      var bgRoute = routeData[stacks[1][0].route].backgroundRoute || '/*';
+	      var location = router.router.match(bgRoute);
+
+	      var _mergeStacks2 = mergeStacks([], createNestedStack(location, routeData), routeData),
+	          stack = _mergeStacks2.stack,
+	          index = _mergeStacks2.index;
+
+	      router.stack = stack;
+	      router.activeIndex = index;
+	    } // otherwise we need to preserve the current stack
+
+	  } else {
+	    router.stack = stacks[0];
+	    router.activeIndex = Math.max(0, Math.min(targetIndex, stacks[0].length - 1));
+
+	    if (router.modal) {
+	      router.modal.active = false;
+	    }
+	  }
+
+	  if (stacks.length > 1) {
+	    if (!router.modal) {
+	      router.modal = {
+	        stack: [],
+	        activeIndex: 0
+	      };
+	    }
+
+	    router.modal.active = targetIndex >= 0;
+	    setStacksAndIndexes(router.modal, stacks.slice(1), targetIndex - stacks[0].length, routeData);
+	  }
 	}
 
 	function createStackItem(route, location, routeData) {

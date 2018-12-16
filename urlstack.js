@@ -39,6 +39,11 @@ export default function create( routes ){
 
 		// The current screen in the view port
 		activeIndex: -1,
+		
+		// Route cache to generate new routes
+		_nestedStack: [],
+
+		modal: { active: false, stack: [], activeIndex: -1 },
 
 		// What to do when the URL changes
 		onChange: function( handler ){
@@ -69,14 +74,12 @@ function createRouteChanger( router, routes, callbacks ){
 	let onChange = location => {
 		// Create a nested stack based on the current location
 		let nestedStack = createNestedStack( location, routeData );
+		let { stack, index } = mergeStacks( router._nestedStack || [], nestedStack, routeData );
+		setStacksAndIndexes( router, splitStack( stack ), index, routeData )
 
-		// Merge the nested stack with the one currently held by the router
-		let { stack, index } = mergeStacks( router.stack, nestedStack, routeData )
-		
 		// Update attributes of the router
 		router.location = location
-		router.stack = stack
-		router.activeIndex = index
+		router._nestedStack = stack
 
 		// Call user's callbacks
 		callbacks.forEach( clbk => clbk(location) )
@@ -123,6 +126,55 @@ function createNestedStack( location, routeData ) {
 
 	return stack
 }
+
+function splitStack( nestedStack ){
+	let allStacks = []
+	let currentStack = []
+	nestedStack.forEach( item => {
+		if( item.isModal ){
+			allStacks.push( currentStack );
+			currentStack = [ item ]
+		}
+		else {
+			currentStack.push( item )
+		}
+	})
+	if( currentStack.length ){
+		allStacks.push( currentStack )
+	}
+	return allStacks;
+}
+
+function setStacksAndIndexes( router, stacks, targetIndex, routeData ){
+	if( !stacks[0].length ){
+		// If the first element is empty means that we are in a modal
+		if( !router.stack.length ){
+			// if the currentstack is empty we need to get the default screen
+			let bgRoute = routeData[ stacks[1][0].route ].backgroundRoute || '/*'
+			let location = router.router.match( bgRoute )
+			let {stack, index} = mergeStacks( [], createNestedStack( location, routeData ), routeData);
+			router.stack = stack
+			router.activeIndex = index
+		}
+		// otherwise we need to preserve the current stack
+	}
+	else {
+		router.stack = stacks[0]
+		router.activeIndex = Math.max( 0, Math.min( targetIndex, stacks[0].length - 1 ) )
+		if( router.modal ){
+			router.modal.active = false
+		}
+	}
+
+	if( stacks.length > 1 ){
+		if( !router.modal ){
+			router.modal = { stack: [], activeIndex: 0 }
+		}
+		router.modal.active = targetIndex >= 0;
+		setStacksAndIndexes( router.modal, stacks.slice(1), targetIndex - stacks[0].length, routeData )
+	}
+}
+
 
 function createStackItem ( route, location, routeData ){
 	return {
