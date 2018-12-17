@@ -1,6 +1,6 @@
 # urlstack 
 
-[![Build Status](https://travis-ci.org/arqex/urlstack.svg?branch=master)](https://travis-ci.org/arqex/urlstack) [![npm version](https://badge.fury.io/js/react-datetime.svg)](http://badge.fury.io/js/react-datetime)
+[![Build Status](https://travis-ci.org/arqex/urlstack.svg?branch=master)](https://travis-ci.org/arqex/urlstack) [![npm version](https://badge.fury.io/js/urlstack.svg)](http://badge.fury.io/js/urlstack)
 
 A web app router for mobile apps, based on URLs. Not conventional uh?
 
