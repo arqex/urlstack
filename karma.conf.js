@@ -12,13 +12,13 @@ module.exports = function (config) {
 
         plugins: [
             require('karma-jasmine'),
-            // require('karma-phantomjs-launcher'),
-            require('karma-chrome-launcher')
+            require('karma-phantomjs-launcher'),
+            // require('karma-chrome-launcher')
         ],
 
         port: 9876,
-        // browsers: ['PhantomJS'],
-        browsers: ['Chrome'],
+        browsers: ['PhantomJS'],
+        //browsers: ['Chrome'],
         singleRun: false,
         // Allow remote debugging when using PhantomJS
         customLaunchers: {
