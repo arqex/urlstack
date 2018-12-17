@@ -6,7 +6,7 @@ A web app router for mobile apps, based on URLs. Not conventional uh?
 
 Those weird features make this router great to develop universal applications that need to work in the web and mobile, like the ones created using react-native and react-native-web.
 
-** This package is still in an early state of development and very unstable. It's not recommended to use it on production apps yet. **
+**This package is still in an early state of development and very unstable. It's not recommended to use it on production apps yet.**
 
 ## Installation
 ```

@@ -98,23 +98,60 @@ describe('Check locations', function(){
 	it('modal navigation must not affect locations in the main stack', function(done){
 		
 		let router = createRouter('/list/13/moreInfo')
+		let mainStack = [
+			{ Screen: 'List screen', route: '/list', path: '/list', params: {id: '13'}, pathname: '/list/13/moreInfo', query:{ foo: 'bar'}},
+			{ Screen: 'List item', route: '/list/:id', path: '/list/13', params: {id: '13'}, pathname: '/list/13/moreInfo', query:{ foo: 'bar'}},
+			{ Screen: 'List item moreinfo', route: '/list/:id/moreInfo', path: '/list/13/moreInfo', params: {id: '13'}, pathname: '/list/13/moreInfo', query:{ foo: 'bar'}},
+		]
 		tryLocations( router, done, [
-			{route: '/list/13/moreInfo?foo=bar', mainStack: [
-				{ Screen: 'List screen', route: '/list', path: '/list', params: {id: '13'}, pathname: '/list/13/moreInfo', query:{ foo: 'bar'}},
-				{ Screen: 'List item', route: '/list/:id', path: '/list/13', params: {id: '13'}, pathname: '/list/13/moreInfo', query:{ foo: 'bar'}},
-				{ Screen: 'List item moreinfo', route: '/list/:id/moreInfo', path: '/list/13/moreInfo', params: {id: '13'}, pathname: '/list/13/moreInfo', query:{ foo: 'bar'}},
-			]},
+			{route: '/list/13/moreInfo?foo=bar', mainStack: mainStack},
 			{
 				route: '/modal',
-				mainStack: [
-					{ Screen: 'List screen', route: '/list', path: '/list', params: {id: '13'}, pathname: '/list/13/moreInfo', query:{ foo: 'bar'}},
-					{ Screen: 'List item', route: '/list/:id', path: '/list/13', params: {id: '13'}, pathname: '/list/13/moreInfo', query:{ foo: 'bar'}},
-					{ Screen: 'List item moreinfo', route: '/list/:id/moreInfo', path: '/list/13/moreInfo', params: {id: '13'}, pathname: '/list/13/moreInfo', query:{ foo: 'bar'}},
-				],
+				mainStack: mainStack,
 				modal: [
 					{ Screen: 'Modal', route: '/modal', params: {}, pathname: '/modal', query: {} }
-				]}
+				]
+			},
+			{
+				route: '/modal/child',
+				mainStack: mainStack,
+				modal: [
+					{ Screen: 'Modal', route: '/modal', params: {}, pathname: '/modal/child', query: {} },
+					{ Screen: 'Modal child', route: '/modal/child', params: {}, pathname: '/modal/child', query: {} },
+				]
 			}
 		])
 	})
+
+	it('in tab navigation, the only tab that updates the location is the current', function(done){
+		let router = createRouter('/tabs/tab2')
+		tryLocations( router, done, [
+			{route: '/tabs/tab1', tabs: [
+				{ route: '/tabs/tab1', pathname: '/tabs/tab1', query: {} },
+				{ route: '/tabs/tab2', pathname: '/tabs/tab2', query: {} },
+			]},
+			{route: '/tabs/tab2?foo=bar', tabs: [
+				{ route: '/tabs/tab1', pathname: '/tabs/tab1', query: {} },
+				{ route: '/tabs/tab2', pathname: '/tabs/tab2', query: {foo:'bar'} },
+			]},
+			{route: '/tabs/tab3', tabs: [
+				{ route: '/tabs/tab1', pathname: '/tabs/tab1', query: {} },
+				{ route: '/tabs/tab2', pathname: '/tabs/tab2', query: {foo:'bar'} },
+				{ route: '/tabs/tab3', pathname: '/tabs/tab3', query: {}, params: {} },
+			]},
+			{route: '/tabs/tab3/40', tabs: [
+				{ route: '/tabs/tab1', pathname: '/tabs/tab1', query: {} },
+				{ route: '/tabs/tab2', pathname: '/tabs/tab2', query: {foo:'bar'} },
+				{ route: '/tabs/tab3', pathname: '/tabs/tab3/40', query: {}, params: {id: '40'} },
+			]},
+			{route: '/tabs/tab3/40/moreInfo?other=param', tabs: [
+				{ route: '/tabs/tab1', pathname: '/tabs/tab1', query: {} },
+				{ route: '/tabs/tab2', pathname: '/tabs/tab2', query: {foo:'bar'} },
+				{ route: '/tabs/tab3', pathname: '/tabs/tab3/40/moreInfo', query: {other:'param'}, params: {id: '40'} },
+			]},
+		])
+	})
+
+	
+
 })

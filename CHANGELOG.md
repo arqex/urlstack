@@ -1,3 +1,7 @@
+# v0.4.0
+* Location objects are working ok, tests added for it.
+
+
 # v0.3.0
 * Modal stacks are working now
 * Modal stacks can be recursive
