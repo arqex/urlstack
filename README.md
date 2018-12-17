@@ -1,4 +1,7 @@
-# urlstack
+# urlstack 
+
+[![Build Status](https://travis-ci.org/arqex/urlstack.svg?branch=master)](https://travis-ci.org/arqex/urlstack) [![npm version](https://badge.fury.io/js/react-datetime.svg)](http://badge.fury.io/js/react-datetime)
+
 A web app router for mobile apps, based on URLs. Not conventional uh?
 
 * For web apps is not conventional because is not centered in the browser history but in the way that mobile apps handle screens in a stack. There is a main screen stack, an index that point to the current screen and nested stacks for tab screens.

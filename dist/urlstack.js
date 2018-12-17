@@ -1,7 +1,7 @@
 /*!
  * *//* eslint-disable */
 /*!
- * urlstack v0.3.0
+ * urlstack v0.4.0
  * (c) 2018-present Javier Marquez
  * Released under the MIT License.
  */
