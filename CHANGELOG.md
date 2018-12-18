@@ -1,6 +1,9 @@
+# v0.5.0
+* Urlstack now working in node environments (react-native).
+* Added tests for node environment.
+
 # v0.4.0
 * Location objects are working ok, tests added for it.
-
 
 # v0.3.0
 * Modal stacks are working now

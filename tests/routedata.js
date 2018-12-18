@@ -1,4 +1,4 @@
-window.routes = [
+var routes = [
 	{ path: '/tabs', cb: 'Tabs', isTabs: true, children: [
 		{ path: '/tab1', cb: 'Tab 1' },
 		{ path: '/tab2', cb: 'Tab 2' },
@@ -21,3 +21,10 @@ window.routes = [
 	{ path: '/modalWithBackground', cb: 'Modal width background', isModal: true, backgroundRoute: '/list/12' },
 	{ path: '/*', cb: 'Welcome' } 
 ];
+
+if( typeof global !== 'undefined' ){
+  module.exports = routes;
+}
+else {
+  window.routes = routes;
+}
