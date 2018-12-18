@@ -1,5 +1,7 @@
 import urlhub from 'urlhub'
-import strategy from 'urlhub/hashStrategy'
+import nodeStrategy from 'urlhub/nodeStrategy'
+import hashStrategy from 'urlhub/hashStrategy'
+import pushStrategy from 'urlhub/pushStrategy'
 
 // A wrapper around urlhub to better manage a stack
 // Changes in the current routes will be stacking the screens,
@@ -24,13 +26,24 @@ import strategy from 'urlhub/hashStrategy'
 //
 // So there is a new stack for every tab
 
-export default function create( routes ){
-	let router = urlhub.create({strategy})
+export default function create( routes, options ){
+	var strategy;
+	if( typeof window === 'undefined' ){
+		strategy = nodeStrategy
+	}
+	else if( options && options.strategy === 'hash' ){
+		strategy = hashStrategy
+	}
+	else {
+		strategy = pushStrategy
+	}
+
+	var router = urlhub.create({strategy});
 
 	// callbacks registered for be called on route changes
-	let callbacks = [];
+	var callbacks = [];
 
-	let stackRouter = {
+	var stackRouter = {
 		// The actual urlhub router
 		router: router,
 
@@ -69,12 +82,12 @@ export default function create( routes ){
 function createRouteChanger( router, routes, callbacks ){
 
 	// Get the hierarchy of absolute routes
-	let routeData = getRouteData( routes );
+	var routeData = getRouteData( routes );
 	
-	let onChange = location => {
+	var onChange = location => {
 		// Create a nested stack based on the current location
-		let nestedStack = createNestedStack( location, routeData );
-		let { stack, index } = mergeStacks( router._nestedStack || [], nestedStack, routeData );
+		var nestedStack = createNestedStack( location, routeData );
+		var { stack, index } = mergeStacks( router._nestedStack || [], nestedStack, routeData );
 		setStacksAndIndexes( router, splitStack( stack ), index, routeData )
 
 		// Update attributes of the router
@@ -89,12 +102,12 @@ function createRouteChanger( router, routes, callbacks ){
 }
 
 function createNestedStack( location, routeData ) {
-	let { matchIds } = location
-	let inTab = false
-	let stack = []
+	var matchIds = location.matchIds;
+	var inTab = false;
+	var stack = [];
 
 	matchIds.forEach( route => {
-		let data = routeData[route];
+		var data = routeData[route];
 
 		if (inTab) {
 			// If we are in a tab we won't push this route to the main stack, but to the tab one
@@ -105,7 +118,7 @@ function createNestedStack( location, routeData ) {
 			return;
 		}
 
-		let item = createStackItem( route, location, data );
+		var item = createStackItem( route, location, data );
 
 		if (item.isTabs) {
 			item.tabs = { activeIndex: 0, stack: [] };
@@ -128,8 +141,9 @@ function createNestedStack( location, routeData ) {
 }
 
 function splitStack( nestedStack ){
-	let allStacks = []
-	let currentStack = []
+	var allStacks = [];
+	var currentStack = [];
+
 	nestedStack.forEach( item => {
 		if( item.isModal ){
 			allStacks.push( currentStack );
@@ -150,9 +164,9 @@ function setStacksAndIndexes( router, stacks, targetIndex, routeData ){
 		// If the first element is empty means that we are in a modal
 		if( !router.stack.length ){
 			// if the currentstack is empty we need to get the default screen
-			let bgRoute = routeData[ stacks[1][0].route ].backgroundRoute || '/*'
-			let location = router.router.match( bgRoute )
-			let {stack, index} = mergeStacks( [], createNestedStack( location, routeData ), routeData);
+			var bgRoute = routeData[ stacks[1][0].route ].backgroundRoute || '/*'
+			var location = router.router.match( bgRoute )
+			var {stack, index} = mergeStacks( [], createNestedStack( location, routeData ), routeData);
 			router.stack = stack
 			router.activeIndex = index
 		}
@@ -189,9 +203,9 @@ function createStackItem ( route, location, routeData ){
 }
 
 function getRoutePath( route, pathname ){
-	let routeParts = route.split('/');
-	let pathParts = pathname.split('/');
-	let routePath = [];
+	var routeParts = route.split('/');
+	var pathParts = pathname.split('/');
+	var routePath = [];
 
 	routeParts.forEach( (p, i) => {
 		routePath.push( pathParts[i] || p )
@@ -201,11 +215,11 @@ function getRoutePath( route, pathname ){
 }
 
 function mergeStacks( currentStack, candidateStack, routeData ){
-	let nextStack = []
-	let i = 0
-	let sameRoot = true
-	let current = currentStack[0]
-	let candidate = candidateStack[0]
+	var nextStack = []
+	var i = 0
+	var sameRoot = true
+	var current = currentStack[0]
+	var candidate = candidateStack[0]
 
 	while ( current || candidate ) {
 		if (sameRoot && current && candidate) {
@@ -242,18 +256,18 @@ function mergeStacks( currentStack, candidateStack, routeData ){
 }
 
 function mergeItems( current, candidate, routeData ){
-	let item = { ...candidate, key: current.key }
+	var item = { ...candidate, key: current.key }
 	if( item.tabs ){
-		let tabOrder = routeData[ current.route ].children
-		let toAdd = candidate.tabs.stack[0]
-		let tabStack = current.tabs.stack.slice()
-		let i = 0
-		let added = false
+		var tabOrder = routeData[ current.route ].children
+		var toAdd = candidate.tabs.stack[0]
+		var tabStack = current.tabs.stack.slice()
+		var i = 0
+		var added = false
 		tabOrder.forEach( tab => {
 			if( added ) return;
 
-			let route = current.route + tab.path;
-			let currentTab = tabStack[i]
+			var route = current.route + tab.path;
+			var currentTab = tabStack[i]
 			if( toAdd.route === route ){
 				if( currentTab && currentTab.route === route ){
 					toAdd.key = currentTab.key
@@ -278,8 +292,8 @@ function mergeItems( current, candidate, routeData ){
 }
 
 function getFirstTab( tabScreen ){
-	let i = 0;
-	let child;
+	var i = 0;
+	var child;
 
 	while( i < tabScreen.children.length ){
 		child = tabScreen.children[i]
@@ -300,13 +314,13 @@ function getFirstTab( tabScreen ){
  * @param {*} parentRoute The path of the parent route to get the absolute path of children
  */
 function getRouteData( routes, parentRoute = '' ){
-	let h = {}
+	var h = {}
 
 	routes.forEach( r => {
-		let route = parentRoute + r.path;
+		var route = parentRoute + r.path;
 		h[route] = r;
 		if( r.children ){
-			let childrenData = getRouteData( r.children, route );
+			var childrenData = getRouteData( r.children, route );
 			h = { ...h, ...childrenData }
 		}
 	})
@@ -318,7 +332,7 @@ function getRouteData( routes, parentRoute = '' ){
  * Generate a random key to identify a route
  */
 function generateKey() {
-	let number = Math.floor( Math.random() * 100000 )
-	// Make sure it starts with a letter - j is first letter of my name :)
+	var number = Math.floor( Math.random() * 100000 )
+	// Make sure it starts with a varter - j is first varter of my name :)
 	return 'j' + number.toString(36);
 }

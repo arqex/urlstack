@@ -5,7 +5,7 @@
   "main": "urlstack.js",
   "scripts": {
     "build": "./node_modules/.bin/bili",
-    "test": "node_modules/.bin/karma start karma.conf.js"
+    "test": "node_modules/.bin/karma start karma.conf.js --single-run"
   },
   "repository": {
     "type": "git",
@@ -26,18 +26,17 @@
   },
   "homepage": "https://github.com/arqex/urlstack#readme",
   "dependencies": {
-    "urlhub": "^0.6.0"
+    "urlhub": "^0.7.0"
   },
   "peerDependencies": {
     "react-native": "^0.55.2"
   },
   "devDependencies": {
     "bili": "^3.4.2",
-    "jasmine-core": "^3.3.0",
+    "jasmine": "^3.3.1",
     "karma": "^3.1.3",
     "karma-chrome-launcher": "^2.2.0",
     "karma-cli": "^2.0.0",
-    "karma-jasmine": "^2.0.1",
-    "karma-phantomjs-launcher": "^1.0.4"
+    "karma-jasmine": "^2.0.1"
   }
 }
