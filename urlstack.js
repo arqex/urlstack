@@ -45,7 +45,7 @@ export default function create( routes, options ){
 
 	var stackRouter = {
 		// The actual urlhub router
-		router: router,
+		urlhub: router,
 
 		// The stack of screens in place, with nested tabs [{Screen, route, isTabs, isModal, key}]
 		stack: [],
@@ -56,12 +56,31 @@ export default function create( routes, options ){
 		// Route cache to generate new routes
 		_nestedStack: [],
 
+		// Last navigated URLs
+		_lastNavigated: [],
+
 		modal: { active: false, stack: [], activeIndex: -1 },
 
 		// What to do when the URL changes
 		onChange: function( handler ){
 			callbacks.push( handler )
 		},
+
+		// The main method to update the current screen
+		navigate: function( route ){
+			var isBack = route === this._lastNavigated[ this._lastNavigated.length - 2];
+
+			if( isBack ){
+				this._lastNavigated.pop();
+				// unfortunatelly this is buggy in chrome
+				// router.back();
+				router.push.apply( router, arguments );
+			}
+			else {
+				this._lastNavigated.push( route );
+				router.push.apply( router, arguments );
+			}
+		}
 	};
 
 	// Set routes and our callback that will generate the stacks
@@ -69,9 +88,9 @@ export default function create( routes, options ){
 	router.onChange( createRouteChanger( stackRouter, routes, callbacks ) );
 
 	// Some extra methods from urlhub
-	['start', 'stop', 'onBeforeChange', 'push', 'replace'].forEach( method => {
+	['start', 'stop', 'onBeforeChange', 'replace'].forEach( method => {
 		stackRouter[method] = function(){
-			return this.router[method].apply( this.router, arguments );
+			return this.urlhub[method].apply( this.urlhub, arguments );
 		}
 	});
 
@@ -85,6 +104,14 @@ function createRouteChanger( router, routes, callbacks ){
 	var routeData = getRouteData( routes );
 	
 	var onChange = location => {
+		// Check if the change hasn't been programmatic (by the browser history or address bar )
+		let route = location.pathname + location.search + location.hash;
+		if( route !== router._lastNavigated[ router._lastNavigated.length - 1] ){
+			// In this case we flush the last navigated as we can't rely on our history to try to predict
+			// going back interactions anymore
+			router._lastNavigated = [];
+		}
+
 		// Create a nested stack based on the current location
 		var nestedStack = createNestedStack( location, routeData );
 		var { stack, index } = mergeStacks( router._nestedStack || [], nestedStack, routeData );
@@ -165,7 +192,7 @@ function setStacksAndIndexes( router, stacks, targetIndex, routeData ){
 		if( !router.stack.length ){
 			// if the currentstack is empty we need to get the default screen
 			var bgRoute = routeData[ stacks[1][0].route ].backgroundRoute || '/*'
-			var location = router.router.match( bgRoute )
+			var location = router.urlhub.match( bgRoute )
 			var {stack, index} = mergeStacks( [], createNestedStack( location, routeData ), routeData);
 			router.stack = stack
 			router.activeIndex = index

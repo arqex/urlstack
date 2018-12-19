@@ -8,8 +8,8 @@
 var r;
 function createRouter( initialRoute ){
 	r && r.stop();
-	r = urlstack( routes );
-	r.push( initialRoute );
+	r = urlstack( routes, {strategy: 'hash'} );
+	r.navigate( initialRoute );
 	r.start();
 	return r;
 }
@@ -32,14 +32,14 @@ function tryLocations( router, done, states ){
 
 		i++;
 		if( i < states.length ){
-			router.push( states[i].route )
+			router.navigate( states[i].route )
 		}
 		else {
 			done()
 		}
 	})
 	
-	router.push( states[i].route )
+	router.navigate( states[i].route )
 }
 
 function tryLocationList( stack, locations ){

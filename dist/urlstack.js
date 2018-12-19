@@ -1,7 +1,7 @@
 /*!
  * *//* eslint-disable */
 /*!
- * urlstack v0.4.0
+ * urlstack v0.5.0
  * (c) 2018-present Javier Marquez
  * Released under the MIT License.
  */
@@ -913,7 +913,7 @@
       this.updateLocation('replace', location);
     },
     back: function(){
-      window.history.back();
+      this.strategy.back();
     },
     updateLocation: function( method, location ){
       var current = this.strategy.getLocation();
@@ -1023,7 +1023,13 @@
   			hash: searchParts[1] ? '#' + searchParts[1] : '',
   			query: searchParts[0] ? dist$2.parse( searchParts[0] ) : {}
   		}
-  	}
+    },
+    back: function(){
+      if( this.history.length > 1 ){
+        this.history.pop();
+      }
+      this.emit();
+    }
   };
 
   var nodeStrategy_1 = nodeStrategy;
@@ -1070,6 +1076,9 @@
   	},
   	emit: function () {
   		onChange$1(this.getLocation());
+  	},
+  	back: function () {
+      window.history.back();
   	}
   };
 
@@ -1119,7 +1128,10 @@
     },
     emit: function(){
       onChange$2 && onChange$2( this.getLocation() );
-    }
+    },
+  	back: function () {
+      window.history.back();
+  	}
   };
 
   var pushStrategy_1 = pushStrategy;
@@ -1162,13 +1174,15 @@
     var callbacks = [];
     var stackRouter = {
       // The actual urlhub router
-      router: router,
+      urlhub: router,
       // The stack of screens in place, with nested tabs [{Screen, route, isTabs, isModal, key}]
       stack: [],
       // The current screen in the view port
       activeIndex: -1,
       // Route cache to generate new routes
       _nestedStack: [],
+      // Last navigated URLs
+      _lastNavigated: [],
       modal: {
         active: false,
         stack: [],
@@ -1177,15 +1191,35 @@
       // What to do when the URL changes
       onChange: function onChange(handler) {
         callbacks.push(handler);
+      },
+      // The main method to update the current screen
+      navigate: function navigate(route) {
+        var isBack = route === this._lastNavigated[this._lastNavigated.length - 2];
+
+        if (isBack) {
+          console.log('Back ', route);
+
+          this._lastNavigated.pop(); // unfortunatelly this is buggy in chrome
+          // router.back();
+
+
+          router.push.apply(router, arguments);
+        } else {
+          console.log('Nav ', route);
+
+          this._lastNavigated.push(route);
+
+          router.push.apply(router, arguments);
+        }
       }
     }; // Set routes and our callback that will generate the stacks
 
     router.setRoutes(routes);
     router.onChange(createRouteChanger(stackRouter, routes, callbacks)); // Some extra methods from urlhub
 
-    ['start', 'stop', 'onBeforeChange', 'push', 'replace'].forEach(function (method) {
+    ['start', 'stop', 'onBeforeChange', 'replace'].forEach(function (method) {
       stackRouter[method] = function () {
-        return this.router[method].apply(this.router, arguments);
+        return this.urlhub[method].apply(this.urlhub, arguments);
       };
     });
     return stackRouter;
@@ -1196,7 +1230,16 @@
     var routeData = getRouteData(routes);
 
     var onChange = function onChange(location) {
-      // Create a nested stack based on the current location
+      // Check if the change hasn't been programmatic (by the browser history or address bar )
+      var route = location.pathname + location.search + location.hash;
+
+      if (route !== router._lastNavigated[router._lastNavigated.length - 1]) {
+        // In this case we flush the last navigated as we can't rely on our history to try to predict
+        // going back interactions anymore
+        router._lastNavigated = [];
+      } // Create a nested stack based on the current location
+
+
       var nestedStack = createNestedStack(location, routeData);
 
       var _mergeStacks = mergeStacks(router._nestedStack || [], nestedStack, routeData),
@@ -1281,7 +1324,7 @@
       if (!router.stack.length) {
         // if the currentstack is empty we need to get the default screen
         var bgRoute = routeData[stacks[1][0].route].backgroundRoute || '/*';
-        var location = router.router.match(bgRoute);
+        var location = router.urlhub.match(bgRoute);
 
         var _mergeStacks2 = mergeStacks([], createNestedStack(location, routeData), routeData),
             stack = _mergeStacks2.stack,

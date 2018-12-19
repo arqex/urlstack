@@ -5,7 +5,8 @@
   "main": "urlstack.js",
   "scripts": {
     "build": "./node_modules/.bin/bili",
-    "test": "./node_modules/.bin/karma start karma.conf.js --single-run && \"./node_modules/.bin/jasmine\""
+    "test": "./node_modules/.bin/karma start karma.conf.js --single-run && \"./node_modules/.bin/jasmine\"",
+    "karma": "./node_modules/.bin/karma start karma.chrome.conf.js"
   },
   "repository": {
     "type": "git",
@@ -26,7 +27,7 @@
   },
   "homepage": "https://github.com/arqex/urlstack#readme",
   "dependencies": {
-    "urlhub": "^0.7.0"
+    "urlhub": "^0.7.1"
   },
   "peerDependencies": {
     "react-native": "^0.55.2"

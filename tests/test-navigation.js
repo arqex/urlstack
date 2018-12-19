@@ -8,8 +8,8 @@
 var r;
 function createRouter( initialRoute ){
 	r && r.stop();
-	r = urlstack( routes );
-	r.push( initialRoute );
+	r = urlstack( routes, {strategy: 'hash'} );
+	r.navigate( initialRoute );
 	r.start();
 	return r;
 }
@@ -17,6 +17,7 @@ function createRouter( initialRoute ){
 function tryStacks( router, done, states, getTarget ){
 	var i = 0;
 	router.onChange( () => {
+		// console.log( location.hash )
 		var expected = states[i];
 		if( !expected ) return;
 
@@ -27,13 +28,13 @@ function tryStacks( router, done, states, getTarget ){
 
 		i++;
 		if( i < states.length ){
-			router.push( states[i].route )
+			router.navigate( states[i].route )
 		}
 		else {
 			done()
 		}
 	});
-	router.push( states[i].route )
+	router.navigate( states[i].route )
 }
 
 function tryMainStack( router, done, states ){
@@ -67,7 +68,7 @@ describe( 'Router start and stop', function(){
 
 			router.stop();
 
-			router.push('/modal');
+			router.navigate('/modal');
 			setTimeout( () => {
 				// the listener had to be called just once, because we stopped the router
 				expect(callCount).toBe(1);
@@ -75,7 +76,7 @@ describe( 'Router start and stop', function(){
 			}, 50 )
 		})
 		
-		router.push('/simpleScreen');
+		router.navigate('/simpleScreen');
 	})
 	
 	it('Default route is defined with /*', function( done ){

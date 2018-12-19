@@ -44,7 +44,7 @@ var routes = [
 Then we can start the urlstack:
 ```js
 var urlstack = require('urlstack')
-var router = urlstack( routes )
+var router = urlstack( routes, {strategy: 'push'} )
 
 // We can start listening to URL changes
 router.onChange( (stack, activeIndex) => {
