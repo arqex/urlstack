@@ -1197,16 +1197,12 @@
         var isBack = route === this._lastNavigated[this._lastNavigated.length - 2];
 
         if (isBack) {
-          console.log('Back ', route);
-
           this._lastNavigated.pop(); // unfortunatelly this is buggy in chrome
           // router.back();
 
 
           router.push.apply(router, arguments);
         } else {
-          console.log('Nav ', route);
-
           this._lastNavigated.push(route);
 
           router.push.apply(router, arguments);
