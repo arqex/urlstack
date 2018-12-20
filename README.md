@@ -73,7 +73,7 @@ router.stack // [ data for route /list ]
 router.activeIndex // 0
 ```
 
-Our stack will have 1 element, the first route data for `/list`, and the `activeIndex` will be pointing to the only route in the stack. If you are interested in what data is stored for every item in the stack you can have a look at the [stack item definition]().
+Our stack will have 1 element, the first route data for `/list`, and the `activeIndex` will be pointing to the only route in the stack. If you are interested in what data is stored for every item in the stack you can have a look at the [stack item definition](#stack-item-data).
 
 If we navigate to a child route we are adding screens to the stack. Let's `router.navigate('/list/10')`, and see how our router properties have changed:
 
@@ -218,6 +218,9 @@ Modals have their own stack (a real one, not like the tabs), they can have child
 
 If we close the modal, we are get just seeing the main stack again. We achieve that by `router.navigate('/tabs/tab3/ef36a0') and our route data will remain very similar:
 ```js
+let modal = router.modal
+modal.active // false <<<<<<<<<<<<<< this is the only change
+
 // Our main stack
 router.stack // [ /tabs, /tabs/tab3/ef36a0 ]
 router.activeIndex // 1
@@ -227,9 +230,7 @@ let tabs = router.stack[0].tabs
 tabs.stack // [ /tab3 ]
 router.activeIndex // 0
 
-// And the modal data is in another place too
-let modal = router.modal
-modal.active // false <<<<<<<<<<<<<< this is the only change
+// And the rest of the modal data stays the same
 modal.stack // [ /modal ]
 modal.activeIndex // 0
 ```
