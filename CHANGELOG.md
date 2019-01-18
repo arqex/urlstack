@@ -1,3 +1,6 @@
+# v0.5.1
+* Node strategy is set checking the document object instead the window one, in order to make it work in react-native.
+
 # v0.5.0
 * Urlstack now working in node environments (react-native).
 * Added tests for node environment.

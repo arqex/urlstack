@@ -28,7 +28,7 @@ import pushStrategy from 'urlhub/pushStrategy'
 
 export default function create( routes, options ){
 	var strategy;
-	if( typeof window === 'undefined' ){
+	if( typeof document === 'undefined' ){
 		strategy = nodeStrategy
 	}
 	else if( options && options.strategy === 'hash' ){
