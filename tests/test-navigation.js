@@ -144,17 +144,18 @@ describe('Tab stack tests', function(){
 		var stackItem = mainStack[ router.activeIndex ]
 		expect( mainStack.length ).toBe( 1 )
 		expect( stackItem.Screen ).toBe('Tabs')
-		expect( stackItem.tabs.stack.length ).toBe( 1 )
+		expect( stackItem.tabs.stack.length ).toBe( 3 )
 		expect( stackItem.tabs.stack[ stackItem.tabs.activeIndex ].Screen  ).toBe('Tab 1')
 	})
 	
-	it('Loading a tab that is not the first should only load that tab', function(){
+	it('Loading a tab that is not the first', function(){
 		var router = createRouter('/tabs/tab2')
 		var mainStack = router.stack;
 		var stackItem = mainStack[ router.activeIndex ]
 		expect( mainStack.length ).toBe( 1 )
 		expect( stackItem.Screen ).toBe('Tabs')
-		expect( stackItem.tabs.stack.length ).toBe( 1 )
+		expect( stackItem.tabs.stack.length ).toBe( 3 )
+		expect( stackItem.tabs.activeIndex ).toBe( 1 )
 		expect( stackItem.tabs.stack[ stackItem.tabs.activeIndex ].Screen  ).toBe('Tab 2')
 	})
 
@@ -162,12 +163,13 @@ describe('Tab stack tests', function(){
 		var router = createRouter('/tabs/tab3')
 		var tabs = router.stack[0].tabs
 		
-		expect( tabs.stack.length ).toBe( 1 )
+		expect(tabs.stack.length).toBe(3)
+		expect(tabs.activeIndex).toBe(2)
 		expect( tabs.stack[ tabs.activeIndex ].Screen ).toBe('Tab 3')
 
 		tryTabStack( router, done, [
-			{ route: '/tabs/tab2', length: 2, activeIndex: 0, screen: 'Tab 2' },
-			{ route: '/tabs/tab3', length: 2, activeIndex: 1, screen: 'Tab 3' },
+			{ route: '/tabs/tab2', length: 3, activeIndex: 1, screen: 'Tab 2' },
+			{ route: '/tabs/tab3', length: 3, activeIndex: 2, screen: 'Tab 3' },
 			{ route: '/tabs/tab1', length: 3, activeIndex: 0, screen: 'Tab 1' },
 			{ route: '/tabs/tab3', length: 3, activeIndex: 2, screen: 'Tab 3' }
 		])
@@ -176,14 +178,14 @@ describe('Tab stack tests', function(){
 	it('Navigation in tab children should prevent other tabs.', function( done ){
 		var router = createRouter('/tabs/tab2')
 		var firstTabPush = clbk => {
-			tryTabStack( router, clbk, [{route: '/tabs/tab3', length: 2, activeIndex: 1, screen: 'Tab 3'}] )
+			tryTabStack( router, clbk, [{route: '/tabs/tab3', length: 3, activeIndex: 2, screen: 'Tab 3'}] )
 		}
 		var firstTabChildren = clbk => {
 			tryMainStack( router, clbk, [{route: '/tabs/tab3/12', length: 2, activeIndex: 1, screen: 'Tab 3 details'}] )
 		}
 		var tabStackMaintained = () => {
 			let tabs = router.stack[0].tabs
-			expect( tabs.stack.length ).toBe( 2 )
+			expect( tabs.stack.length ).toBe( 3 )
 			expect( tabs.stack[ tabs.activeIndex ].Screen ).toBe('Tab 3')
 		}
 		var stackMaintained = clbk => {
@@ -211,7 +213,7 @@ describe('Tab stack tests', function(){
 		var router = createRouter('/tabs/tab3/12/moreInfo');
 		var checkTabs = () => {
 			let tabs = router.stack[0].tabs
-			expect( tabs.stack.length ).toBe( 2 )
+			expect( tabs.stack.length ).toBe( 3 )
 			expect( tabs.stack[ tabs.activeIndex ].Screen ).toBe('Tab 2')
 			tryMainStack(router, done, [{ route: '/simpleScreen', length: 1, activeIndex: 0, screen: 'Simple screen' }])
 		}
@@ -272,7 +274,7 @@ describe('Modal routing', function(){
 		var tabs = router.stack[0].tabs;
 		expect( router.stack.length ).toBe( 2 )
 		expect( router.stack[ router.activeIndex ].Screen ).toBe('Tab 3 details')
-		expect( tabs.stack.length ).toBe( 1 )
+		expect( tabs.stack.length ).toBe( 3 )
 		expect( tabs.stack[ tabs.activeIndex ].Screen ).toBe('Tab 3')
 		expect( router.modal.active ).toBe( true )
 		expect( router.modal.stack.length ).toBe( 1 )

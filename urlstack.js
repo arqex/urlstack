@@ -137,8 +137,9 @@ function createNestedStack( location, routeData ) {
 		var data = routeData[route];
 
 		if (inTab) {
-			// If we are in a tab we won't push this route to the main stack, but to the tab one
-			inTab.tabs.stack.push( createStackItem( route, location, data ) )
+			// If we are in a tab we won't push this route to the main stack,
+			// just update the activeIndex
+			inTab.tabs.activeIndex = findTab(route, inTab.tabs.stack)
 
 			// Get out the stack
 			inTab = false;
@@ -148,7 +149,13 @@ function createNestedStack( location, routeData ) {
 		var item = createStackItem( route, location, data );
 
 		if (item.isTabs) {
-			item.tabs = { activeIndex: 0, stack: [] };
+			// Push all children
+			item.tabs = {
+				activeIndex: 0,
+				stack: routeData[item.route].children.map( child => (
+					createStackItem( route + child.path, location, routeData[ route + child.path ] )
+				))
+			};
 			inTab = item;
 		}
 
@@ -157,11 +164,10 @@ function createNestedStack( location, routeData ) {
 
 	if( inTab ){
 		// This means that the last screen in the hierarchy was a tab wrapper
-		// We need to fill the tab stack at least with one ticket
-		var tab = routeData[ matchIds[matchIds.length - 1] ]
-		var child = getFirstTab( tab )
-		var route = location.pathname + child.path
-		inTab.tabs.stack.push( createStackItem(route, location, routeData[route]) )
+		// Check if we have any tab to show
+		if( !inTab.tabs.stack.length ){
+			console.warn('Urlstack: Hit a tabs URL without any children: ' + tabScreen.path)
+		}
 	}
 
 	return stack
@@ -283,53 +289,32 @@ function mergeStacks( currentStack, candidateStack, routeData ){
 }
 
 function mergeItems( current, candidate, routeData ){
-	var item = { ...candidate, key: current.key }
-	if( item.tabs ){
-		var tabOrder = routeData[ current.route ].children
-		var toAdd = candidate.tabs.stack[0]
-		var tabStack = current.tabs.stack.slice()
-		var i = 0
-		var added = false
-		tabOrder.forEach( tab => {
-			if( added ) return;
+	var item = {
+		...candidate, key: current.key,
+	}
 
-			var route = current.route + tab.path;
-			var currentTab = tabStack[i]
-			if( toAdd.route === route ){
-				if( currentTab && currentTab.route === route ){
-					toAdd.key = currentTab.key
-					tabStack[i] = toAdd
-				}
-				else {
-					tabStack.splice( i, 0, toAdd )
-				}
-				added = true;
-			}
-			else if( currentTab && currentTab.route === route ){
-				i++;
-			}
+	if( item.tabs ){
+		// Merge tab stack
+		let tabStack = [];
+		let activeIndex = item.tabs.activeIndex
+
+		// Preserve current tab data, except for the active one
+		current.tabs.stack.forEach( (item, i) => {
+			tabStack.push(
+				i === activeIndex ? candidate.tabs.stack[i] : item
+			)
+			// set the parameter visited
+			tabStack[i].visited = item.visited || i === activeIndex
 		})
 
+		// Refresh the tabs
 		item.tabs = {
 			stack: tabStack,
-			activeIndex: i 
+			activeIndex
 		}
 	}
+
 	return item;
-}
-
-function getFirstTab( tabScreen ){
-	var i = 0;
-	var child;
-
-	while( i < tabScreen.children.length ){
-		child = tabScreen.children[i]
-		if( !child.isTabs && !child.isModal ){
-			return child;
-		}
-	}
-	
-	console.warn('Urlstack: Hit a tabs URL without any children: ' + tabScreen.path )
 }
 
 /**
@@ -362,4 +347,16 @@ function generateKey() {
 	var number = Math.floor( Math.random() * 100000 )
 	// Make sure it starts with a varter - j is first varter of my name :)
 	return 'j' + number.toString(36);
+}
+
+function findTab( route, stack ){
+	let i = stack.length;
+	while( i-- ){
+		if( stack[i].route === route ){
+			return i;
+		}
+	}
+
+	// By default we show the first tab
+	return 0;
 }

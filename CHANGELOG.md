@@ -1,3 +1,7 @@
+# v0.6.0
+* Tabs stack are now always prefilled even if some tabs has not been visited
+* Adds visited attribute to the tab items
+
 # v0.5.1
 * Node strategy is set checking the document object instead the window one, in order to make it work in react-native.
 
