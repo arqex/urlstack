@@ -58,9 +58,9 @@ router.navigate('/modal')
 ```
 
 ## Is urlstack useful for me?
-Urlstack is intended to create navigators for applications that might be used in web and mobile apps. We probably don't want to use it directly if we are creating a react-native-web app, we would want a navigator component instead, like [react-urlstack](https://github.com/arqex/react-urlstack(https://github.com) that uses urlstack internally.
+Urlstack is intended to create navigators for applications that might be used in web and mobile phones. You probably don't want to use it directly if we are creating a react-native-web app, it's a better idea to use a navigator component instead, like [react-urlstack](https://github.com/arqex/react-urlstack) that uses urlstack internally.
 
-If we are creating a navigator itself, then relying on a well tested universal router like urlstack sounds like a great idea!
+If you are creating a navigator itself, then relying on a well tested universal router like urlstack sounds like a great idea!
 
 ## How does it work?
 Navigating with urlstack is more or less restricted by the way the routes are defined. As a starting point let's take the [route definition above](#usage) and show what happens when we navigate.
@@ -158,11 +158,11 @@ router.activeIndex // 0
 
 // The tab screen is in a different place
 let tabs = router.stack[0].tabs
-tabs.stack // [ /tab2 ]
-router.activeIndex // 0
+tabs.stack // [ /tab1, /tab2, /tab3 ]
+router.activeIndex // 1
 ```
 
-The `tabs` property of a route has the same attributes than the router to make us easier to remember them, but the `stack` is not really a stack, if we call `router.navigate('/tabs/tab1')` we get the following result:
+The `tabs` property of a route has the same attributes than the router to make us easier to remember them. However the `stack` is not really a stack, it's rather an array, fully loaded, where we can move forward and back. If we call `router.navigate('/tabs/tab1')` we get the following result:
 ```js
 // We only have one screen in the stack
 router.stack // [ /tabs ]
@@ -170,11 +170,11 @@ router.activeIndex // 0
 
 // The tab screen is in a different place
 let tabs = router.stack[0].tabs
-tabs.stack // [ /tab2 ]
+tabs.stack // [ /tab1, /tab2, /tab3 ]
 router.activeIndex // 0
 ```
 
-The stack is rather a simple list of screens that respects the order of the route definition that will make easier any transition animation between tab contents.
+The stack is a simple list of screens that respects the order of the route definition that will make easier any transition animation between tab contents.
 
 If we navigate to a child route of a tab one, that route affects again to the main stack. Let's call `router.navigate('/tabs/tab3/ef36a0')` and we will get:
 ```js
@@ -194,7 +194,7 @@ In the route objects within a tab stack there is only one that have the `locatio
 Tabs screen are just containers for other screens. Even if we can navigate to the route of the tab container, like `/tabs` it makes not much sense to show the tabs and no content, so urlstack will load the first tab automatically.
 
 ### Modals
-The last typical way of showing information that urlstack tackles is the usage of modals. Modals are a way of showing information in top of the current screen. A modal shouldn't mess with the main stack, but modal screens should also have their own URL to be referenced, that's why we need to handle them inside of urlstack.
+Another common way of showing information that urlstack handles is the usage of modals. Modals are a way of showing content in top of the current screen. A modal shouldn't mess with the main stack, but modal screens should also have their own URL to be referenced, that's why we need to handle them inside of urlstack.
 
 Let's start the examples using the route `/tabs/tab3/ef36a0` and then call `router.navigate('/modal')`. What happened inside of our router?
 ```js
@@ -271,8 +271,8 @@ router.activeIndex // 1
 
 // We are using tabs, so we have also some route information there
 let tabs = router.stack[0].tabs
-tabs.stack // [ /tab3 ]
-router.activeIndex // 0
+tabs.stack // [ /tab1, /tab2, /tab3 ]
+router.activeIndex // 2
 
 // And the modal data is in another place too
 let modal = router.modal
@@ -284,7 +284,7 @@ modal.activeIndex // 0
 modal.stack[0].location.params // {id: "ef36a0"}
 ```
 
-This is really useful when you want to edit the details of that tab screen inside of a modal.
+Looks like an edge case, but it's not difficult to want to edit the details of that tab screen inside of a modal.
 
 ---
 
