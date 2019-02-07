@@ -1,7 +1,7 @@
 /*!
  * *//* eslint-disable */
 /*!
- * urlstack v0.6.0
+ * urlstack v0.6.1
  * (c) 2018-present Javier Marquez
  * Released under the MIT License.
  */
@@ -1427,7 +1427,8 @@
       var activeIndex = item.tabs.activeIndex; // Preserve current tab data, except for the active one
 
       current.tabs.stack.forEach(function (item, i) {
-        tabStack.push(i === activeIndex ? candidate.tabs.stack[i] : item); // set the parameter visited
+        tabStack.push(i === activeIndex ? candidate.tabs.stack[i] : item);
+        tabStack[i].key = item.key; // set the parameter visited
 
         tabStack[i].visited = item.visited || i === activeIndex;
       }); // Refresh the tabs

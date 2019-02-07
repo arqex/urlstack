@@ -303,6 +303,8 @@ function mergeItems( current, candidate, routeData ){
 			tabStack.push(
 				i === activeIndex ? candidate.tabs.stack[i] : item
 			)
+
+			tabStack[i].key = item.key
 			// set the parameter visited
 			tabStack[i].visited = item.visited || i === activeIndex
 		})

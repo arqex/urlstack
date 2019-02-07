@@ -1,3 +1,6 @@
+# v0.6.1
+* Fixes tab stack not preserving keys when navigating
+
 # v0.6.0
 * Tabs stack are now always prefilled even if some tabs has not been visited
 * Adds visited attribute to the tab items

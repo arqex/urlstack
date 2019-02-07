@@ -159,6 +159,26 @@ describe('Tab stack tests', function(){
 		expect( stackItem.tabs.stack[ stackItem.tabs.activeIndex ].Screen  ).toBe('Tab 2')
 	})
 
+	it('Navigating through tabs doesnt update tab keys', function( done ) {
+		var router = createRouter('/tabs/tab1')
+		let originalStack = router.stack[0].tabs.stack;
+
+		let finalCheck = function() {
+			let otherStack = router.stack[0].tabs.stack;
+
+			expect( originalStack ).not.toBe( otherStack )
+			expect(originalStack[0].key).toBe(otherStack[0].key)
+			expect(originalStack[1].key).toBe(otherStack[1].key)
+			expect(originalStack[2].key).toBe(otherStack[2].key)
+			done()
+		}
+
+		tryTabStack(router, finalCheck, [
+			{ route: '/tabs/tab2', length: 3, activeIndex: 1, screen: 'Tab 2' },
+			{ route: '/tabs/tab3', length: 3, activeIndex: 2, screen: 'Tab 3' }
+		])
+	})
+
 	it('Tab stack always follow the definition object', function( done ){
 		var router = createRouter('/tabs/tab3')
 		var tabs = router.stack[0].tabs
